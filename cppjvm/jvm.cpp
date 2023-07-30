@@ -155,6 +155,14 @@ void JVM::interpret_opcode(uint8_t opcode) {
 		operand_stack().push(value);
 		break;
 	}
+	// SIPUSH
+	case 0x11: {
+		uint16_t value = bytecode_fetch_short(
+			operating_bytecode.code, operating_bytecode.code_length, m_pc);
+		m_pc += 2;
+		operand_stack().push(value);
+		break;
+	}
 	// IF_ICMPGE
 	case 0xa2: {
 		int16_t offset = bytecode_fetch_short(

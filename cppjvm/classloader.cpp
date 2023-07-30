@@ -192,7 +192,7 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 						} else if (tag == 6) {
 							throw std::runtime_error("Unimplemented tag");
 						} else if (tag == 4) {
-							throw std::runtime_error("Unimplemented tag");
+							// throw std::runtime_error("Unimplemented tag");
 						} else if (tag == 3) {
 							throw std::runtime_error("Unimplemented tag");
 						} else if (tag == 2) {
