@@ -1,7 +1,7 @@
 #pragma once
-#include <vector>
-#include <cstdint>
 #include <arpa/inet.h>
+#include <cstdint>
+#include <vector>
 
 class Stack {
   public:

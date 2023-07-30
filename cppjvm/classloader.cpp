@@ -1,13 +1,12 @@
-#include <cppjvm/classloader.h>
+#include <algorithm>
 #include <arpa/inet.h>
 #include <array>
+#include <cppjvm/classloader.h>
+#include <cppjvm/exceptions.h>
 #include <cstring>
 #include <exception>
-#include <stdexcept>
 #include <iostream>
-#include <cstring>
-#include <algorithm>
-#include <cppjvm/exceptions.h>
+#include <stdexcept>
 
 ClassFileStream::ClassFileStream(const char *filename) : m_filename(filename) {
 	// I get le unix mindset is not having bloat
@@ -101,9 +100,7 @@ uint16_t ClassFileStream::read_u2() {
 	return u2;
 }
 
-ClassLoader::ClassLoader(std::string filename)
-	: m_filename(filename)
-{}
+ClassLoader::ClassLoader(std::string filename) : m_filename(filename) {}
 
 ClassLoader::~ClassLoader() {}
 

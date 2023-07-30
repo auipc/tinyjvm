@@ -1,10 +1,10 @@
 #pragma once
-#include <stdexcept>
 #include <cstring>
+#include <stdexcept>
 
 class ErrnoException : public std::exception {
-	public:
-	virtual const char* what() const noexcept override {
+  public:
+	virtual const char *what() const noexcept override {
 		return strerror(errno);
 	}
 };

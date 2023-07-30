@@ -1,8 +1,8 @@
-#include <cppjvm/jvm.h>
 #include <arpa/inet.h>
 #include <cassert>
-#include <iostream>
 #include <cppjvm/classloader.h>
+#include <cppjvm/jvm.h>
+#include <iostream>
 
 // I think it's permissible to have bytecode and memory seperate.
 /*
@@ -33,8 +33,8 @@ void JVM::run() {
 	std::cout << operating_bytecode.code_length << "\n";
 	std::cout << m_pc << "\n";
 	do {
-		uint8_t opcode =
-			bytecode_fetch_byte(operating_bytecode.code, operating_bytecode.code_length, m_pc++);
+		uint8_t opcode = bytecode_fetch_byte(
+			operating_bytecode.code, operating_bytecode.code_length, m_pc++);
 		interpret_opcode(opcode);
 		if ((m_pc + 1) > operating_bytecode.code_length)
 			m_exit = true;
@@ -79,9 +79,7 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	// ISTORE
 	case 0x36: {
 		uint8_t index = bytecode_fetch_byte(
-			operating_bytecode.code,
-			operating_bytecode.code_length,
-			m_pc++);
+			operating_bytecode.code, operating_bytecode.code_length, m_pc++);
 		/*if (index > 10) {
 			throw std::runtime_error("Variable index out of bounds");
 		}
@@ -110,9 +108,7 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	case 0x15: {
 		std::cout << "ILOAD\n";
 		uint8_t index = bytecode_fetch_byte(
-			operating_bytecode.code,
-			operating_bytecode.code_length,
-			m_pc++);
+			operating_bytecode.code, operating_bytecode.code_length, m_pc++);
 		// FIXME bounds check
 		operand_stack().push(stack_frame().local_variables[index]);
 		break;
@@ -136,14 +132,10 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	// IINC
 	case 0x84: {
 		uint8_t index = bytecode_fetch_byte(
-			operating_bytecode.code,
-			operating_bytecode.code_length,
-			m_pc++);
+			operating_bytecode.code, operating_bytecode.code_length, m_pc++);
 		std::cout << "IINC " << (int)index << "\n";
 		int8_t constant = bytecode_fetch_byte(
-			operating_bytecode.code,
-			operating_bytecode.code_length,
-			m_pc++);
+			operating_bytecode.code, operating_bytecode.code_length, m_pc++);
 		stack_frame().local_variables[index] += constant;
 		std::cout << "v " << stack_frame().local_variables[index] << "\n";
 		break;
@@ -151,8 +143,7 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	// GOTO
 	case 0xa7: {
 		int16_t offset = bytecode_fetch_short(
-			operating_bytecode.code,
-			operating_bytecode.code_length, m_pc);
+			operating_bytecode.code, operating_bytecode.code_length, m_pc);
 		std::cout << "goto offset " << offset << "\n";
 		m_pc += offset - 1;
 		break;
@@ -160,17 +151,14 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	// BIPUSH
 	case 0x10: {
 		uint8_t value = bytecode_fetch_byte(
-			operating_bytecode.code,
-			operating_bytecode.code_length,
-			m_pc++);
+			operating_bytecode.code, operating_bytecode.code_length, m_pc++);
 		operand_stack().push(value);
 		break;
 	}
 	// IF_ICMPGE
 	case 0xa2: {
 		int16_t offset = bytecode_fetch_short(
-			operating_bytecode.code,
-			operating_bytecode.code_length, m_pc);
+			operating_bytecode.code, operating_bytecode.code_length, m_pc);
 		m_pc += 2;
 		int32_t b = operand_stack().pop();
 		int32_t a = operand_stack().pop();

@@ -1,7 +1,7 @@
-#include <cppjvm/jvm.h>
 #include <cppjvm/classloader.h>
+#include <cppjvm/jvm.h>
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 	if (argc < 2) {
 		printf("Usage: %s [ClassFile.class]\n", argv[0]);
 		return 1;

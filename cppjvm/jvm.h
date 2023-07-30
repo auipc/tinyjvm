@@ -1,10 +1,10 @@
 #pragma once
 // Hate using the C++ STL
-#include <vector>
-#include <stdio.h>
-#include <cstdint>
-#include <cppjvm/stack.h>
 #include <cppjvm/classloader.h>
+#include <cppjvm/stack.h>
+#include <cstdint>
+#include <stdio.h>
+#include <vector>
 
 class ClassLoader;
 

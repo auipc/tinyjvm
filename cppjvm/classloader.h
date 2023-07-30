@@ -1,9 +1,9 @@
 #pragma once
-#include <vector>
-#include <stdio.h>
 #include <cstdint>
 #include <map>
+#include <stdio.h>
 #include <string>
+#include <vector>
 
 #define CLASS_MAGIC 0xCAFEBABE
 
@@ -57,6 +57,7 @@ class ClassLoader {
 	~ClassLoader();
 	void load_class();
 	std::map<std::string, MethodCode> method_code;
+
   private:
 	void read_attributes(char *utf8, size_t utf8_length, uint16_t count);
 	void read(char *buffer, size_t size);
