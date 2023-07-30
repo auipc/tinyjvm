@@ -4,7 +4,7 @@ OBJS = cppjvm/classloader.o \
 	   cppjvm/main.o \
 	   cppjvm/stack.o
 
-CXXFLAGS=-I. -g -fsanitize=undefined
+CXXFLAGS=-I. -g -fsanitize=undefined -MMD -MP 
 
 CPPJVM=jvm
 
