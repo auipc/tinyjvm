@@ -7,6 +7,7 @@
 #include <iostream>
 #include <cstring>
 #include <algorithm>
+#include <cppjvm/exceptions.h>
 
 ClassFileStream::ClassFileStream(const char *filename) : m_filename(filename) {
 	// I get le unix mindset is not having bloat
@@ -16,6 +17,12 @@ ClassFileStream::ClassFileStream(const char *filename) : m_filename(filename) {
 	// I think FILE in the C std has the length but nobody cares about that
 
 	m_file = fopen(m_filename, "r");
+	if (!m_file) {
+		throw ErrnoException();
+	}
+
+	// These can fail
+	// FIXME handle these
 	fseek(m_file, 0, SEEK_END);
 	m_length = ftell(m_file);
 	fseek(m_file, 0, SEEK_SET);
@@ -94,7 +101,9 @@ uint16_t ClassFileStream::read_u2() {
 	return u2;
 }
 
-ClassLoader::ClassLoader(const char *filename) {}
+ClassLoader::ClassLoader(std::string filename)
+	: m_filename(filename)
+{}
 
 ClassLoader::~ClassLoader() {}
 
@@ -216,7 +225,8 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 
 // TODO methods
 void ClassLoader::load_class() {
-	m_stream = new ClassFileStream("Program.class");
+	m_stream = new ClassFileStream(m_filename.c_str());
+
 	uint32_t magic = m_stream->read<uint32_t>();
 	if (magic != CLASS_MAGIC) {
 		throw std::runtime_error("Magic number missing");

@@ -53,15 +53,15 @@ struct MethodCode {
 
 class ClassLoader {
   public:
-	ClassLoader(const char *filename);
+	ClassLoader(std::string filename);
 	~ClassLoader();
 	void load_class();
 	std::map<std::string, MethodCode> method_code;
-
   private:
 	void read_attributes(char *utf8, size_t utf8_length, uint16_t count);
 	void read(char *buffer, size_t size);
 	std::vector<ConstPoolEntry> constant_pool;
 	// void read_const_pool(ClassFile_1& cfile);
 	ClassFileStream *m_stream = nullptr;
+	std::string m_filename;
 };
