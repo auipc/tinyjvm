@@ -13,7 +13,7 @@ uint8_t bytecode[] = {
 uint8_t bytecode_size = sizeof(bytecode) / sizeof(bytecode[0]);
 */
 
-JVM::JVM(ClassLoader *classloader) : m_classloader(classloader) {
+JVM::JVM(ClassLoader *classloader) : m_classloader(classloader), m_pc(0) {
 	// auto root_stack_frame = StackFrame();
 	// m_stack.push_back(root_stack_frame);
 	auto root_stack_frame = StackFrame::create(nullptr);
@@ -29,13 +29,14 @@ JVM::~JVM() {}
 // case there's implementation specific quirks in the standard java lib Maybe we
 // should write our own :^)
 void JVM::run() {
-	auto code = m_classloader->method_code[std::string("main")];
-	printf("A %d\n", code.code_length);
+	operating_bytecode = m_classloader->method_code[std::string("main")];
+	std::cout << operating_bytecode.code_length << "\n";
+	std::cout << m_pc << "\n";
 	do {
 		uint8_t opcode =
-			bytecode_fetch_byte(code.code, code.code_length, m_pc++);
+			bytecode_fetch_byte(operating_bytecode.code, operating_bytecode.code_length, m_pc++);
 		interpret_opcode(opcode);
-		if ((m_pc + 1) > code.code_length)
+		if ((m_pc + 1) > operating_bytecode.code_length)
 			m_exit = true;
 	} while (!m_exit);
 }
@@ -78,8 +79,8 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	// ISTORE
 	case 0x36: {
 		uint8_t index = bytecode_fetch_byte(
-			m_classloader->method_code[std::string("main")].code,
-			m_classloader->method_code[std::string("main")].code_length,
+			operating_bytecode.code,
+			operating_bytecode.code_length,
 			m_pc++);
 		/*if (index > 10) {
 			throw std::runtime_error("Variable index out of bounds");
@@ -109,8 +110,8 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	case 0x15: {
 		std::cout << "ILOAD\n";
 		uint8_t index = bytecode_fetch_byte(
-			m_classloader->method_code[std::string("main")].code,
-			m_classloader->method_code[std::string("main")].code_length,
+			operating_bytecode.code,
+			operating_bytecode.code_length,
 			m_pc++);
 		// FIXME bounds check
 		operand_stack().push(stack_frame().local_variables[index]);
@@ -135,13 +136,13 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	// IINC
 	case 0x84: {
 		uint8_t index = bytecode_fetch_byte(
-			m_classloader->method_code[std::string("main")].code,
-			m_classloader->method_code[std::string("main")].code_length,
+			operating_bytecode.code,
+			operating_bytecode.code_length,
 			m_pc++);
 		std::cout << "IINC " << (int)index << "\n";
 		int8_t constant = bytecode_fetch_byte(
-			m_classloader->method_code[std::string("main")].code,
-			m_classloader->method_code[std::string("main")].code_length,
+			operating_bytecode.code,
+			operating_bytecode.code_length,
 			m_pc++);
 		stack_frame().local_variables[index] += constant;
 		std::cout << "v " << stack_frame().local_variables[index] << "\n";
@@ -150,8 +151,8 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	// GOTO
 	case 0xa7: {
 		int16_t offset = bytecode_fetch_short(
-			m_classloader->method_code[std::string("main")].code,
-			m_classloader->method_code[std::string("main")].code_length, m_pc);
+			operating_bytecode.code,
+			operating_bytecode.code_length, m_pc);
 		std::cout << "goto offset " << offset << "\n";
 		m_pc += offset - 1;
 		break;
@@ -159,8 +160,8 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	// BIPUSH
 	case 0x10: {
 		uint8_t value = bytecode_fetch_byte(
-			m_classloader->method_code[std::string("main")].code,
-			m_classloader->method_code[std::string("main")].code_length,
+			operating_bytecode.code,
+			operating_bytecode.code_length,
 			m_pc++);
 		operand_stack().push(value);
 		break;
@@ -168,8 +169,8 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	// IF_ICMPGE
 	case 0xa2: {
 		int16_t offset = bytecode_fetch_short(
-			m_classloader->method_code[std::string("main")].code,
-			m_classloader->method_code[std::string("main")].code_length, m_pc);
+			operating_bytecode.code,
+			operating_bytecode.code_length, m_pc);
 		m_pc += 2;
 		int32_t b = operand_stack().pop();
 		int32_t a = operand_stack().pop();

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <cstdint>
 #include <cppjvm/stack.h>
+#include <cppjvm/classloader.h>
 
 class ClassLoader;
 
@@ -34,6 +35,7 @@ class JVM {
 	};
 
 	bool m_exit = false;
+	MethodCode operating_bytecode;
 	std::vector<StackFrame> m_stack;
 	StackFrame *m_current_stack_frame;
 
