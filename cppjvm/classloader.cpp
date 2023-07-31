@@ -305,10 +305,9 @@ void ClassLoader::load_class() {
 		case ConstPoolTag::NameAndType: {
 			uint16_t name_idx = m_stream->read<uint16_t>();
 			uint16_t descriptor_idx = m_stream->read<uint16_t>();
-			auto name = get_const_pool_entry(name_idx);
 			// FIXME include descriptor
 			constant_pool.push_back(ConstPoolEntry{
-				ConstPoolTag::NameAndType, name.utf8, name.utf8_length});
+				.tag = ConstPoolTag::NameAndType, .name_index = name_idx});
 		} break;
 		default:
 			throw std::runtime_error("Unknown constant pool tag");
@@ -378,7 +377,8 @@ void ClassLoader::load_class() {
 		if (entry.tag == ConstPoolTag::MethodRef) {
 			auto name = get_const_pool_entry(entry.class_index);
 			auto name_and_type = get_const_pool_entry(entry.name_and_type_index);
-			methods[name_and_type.utf8].class_index = entry.class_index;
+			auto name_str = get_const_pool_entry(name_and_type.name_index);
+			methods[name_str.utf8].class_index = entry.class_index;
 		}
 	}
 

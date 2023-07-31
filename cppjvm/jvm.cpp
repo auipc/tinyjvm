@@ -38,7 +38,7 @@ void JVM::run() {
 		incr_program_counter();
 		std::cout << "opcode: " << std::hex << (int)opcode << std::dec << "\n";
 		interpret_opcode(opcode);
-		if ((get_program_counter() + 1) >
+		if ((get_program_counter()) >
 			stack_frame().operating_bytecode.code_length)
 			exit("End of bytecode");
 	} while (!m_exit);
@@ -354,13 +354,15 @@ void JVM::interpret_opcode(uint8_t opcode) {
 			exit("Bad constant pool entry");
 		}
 
-		std::cout << name_and_type.utf8 << "\n";
+		// FIXME utf8 isn't null terminated. sort of a big issue
+		auto name_str = m_classloader->get_const_pool_entry(name_and_type.name_index);
+		std::cout << name_str.utf8 << "\n";
 		m_current_stack_frame = &StackFrame::create(m_current_stack_frame);
 		// TODO check if the method matches the type signature
 		// otherwise the stack will be corrupted and we won't find the function
 		// we're looking for.
 		stack_frame().operating_bytecode =
-			m_classloader->methods[std::string(name_and_type.utf8)];
+			m_classloader->methods[std::string(name_str.utf8)];
 
 		break;
 	}
