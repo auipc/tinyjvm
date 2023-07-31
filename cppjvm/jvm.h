@@ -3,6 +3,7 @@
 #include <cppjvm/classloader.h>
 #include <cppjvm/stack.h>
 #include <cstdint>
+#include <iostream>
 #include <stdio.h>
 #include <vector>
 
@@ -13,18 +14,27 @@ class JVM {
 	JVM(ClassLoader *classloader);
 	~JVM();
 	void run();
+	inline void exit(const char *reason) {
+		std::cout << "exiting: " << reason << "\n";
+		m_exit = true;
+	}
 
   private:
-	void istore(int32_t index, int32_t value);
+	void lstore(uint16_t index, int64_t value);
+	void istore(uint16_t index, int32_t value);
 	struct StackFrame {
 		StackFrame *parent = nullptr;
 		Stack operand_stack;
-		std::vector<uint64_t> local_variables;
+		uint32_t pc;
+		// FIXME use VarInt
+		// We should probably create a generic class called Variable that will
+		// be able to hold anything and everything.
+		std::vector<int64_t> local_variables;
 		static StackFrame create(StackFrame *parent) {
 			auto stack_frame = StackFrame();
 			stack_frame.parent = parent;
 			// Add 10 empty local variables
-			for (int i = 0; i < 10; i++)
+			for (int i = 0; i <= 10; i++)
 				stack_frame.local_variables.push_back(0);
 
 			if (parent != nullptr || parent != NULL) {
@@ -35,7 +45,7 @@ class JVM {
 	};
 
 	bool m_exit = false;
-	MethodCode operating_bytecode;
+	Method operating_bytecode;
 	std::vector<StackFrame> m_stack;
 	StackFrame *m_current_stack_frame;
 
@@ -50,6 +60,22 @@ class JVM {
 								 size_t ptr);
 
 	void interpret_opcode(uint8_t opcode);
-	uint32_t m_pc;
+	inline uint32_t incr_program_counter() {
+		m_current_stack_frame->pc++;
+		return m_current_stack_frame->pc;
+	}
+
+	inline uint32_t get_program_counter() {
+		return m_current_stack_frame->pc;
+	}
+
+	inline void set_program_counter(uint32_t pc) {
+		m_current_stack_frame->pc = pc;
+	}
+
+	inline void add_program_counter(uint32_t pc) {
+		m_current_stack_frame->pc += pc;
+	}
+
 	ClassLoader *m_classloader;
 };

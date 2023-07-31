@@ -10,6 +10,7 @@ class Stack {
 	// except addresses
 	void push(int32_t v);
 	void push_64(int64_t);
+	void dump_stack();
 	int32_t pop();
 	int64_t pop_64();
 	int32_t peek();

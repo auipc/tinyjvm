@@ -126,8 +126,8 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 			}
 			printf("\n");
 
-			method_code[std::string(utf8, utf8_length)] =
-				MethodCode{max_stack, max_locals, code_length, code};
+			methods[std::string(utf8, utf8_length)] =
+				Method{max_stack, max_locals, code_length, code};
 			std::cout << "lel: " << std::string(utf8, utf8_length) << "\n";
 
 			uint16_t exception_table_length = m_stream->read<uint16_t>();
@@ -174,7 +174,31 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 						"same_frame_extended not implemented");
 				} else if (frame_type >= 252 && frame_type <= 254) {
 					// append_frame
-					throw std::runtime_error("append_frame not implemented");
+					uint16_t offset_delta = m_stream->read<uint16_t>();
+					uint16_t number_of_locals = frame_type - 251;
+					// read verification_type_info
+					for (int i = 0; i < number_of_locals; i++) {
+						uint8_t tag = m_stream->read<uint8_t>();
+						std::cout << "tag: " << (int)tag << "\n";
+						switch (tag) {
+						case 1:
+							std::cout << "integer\n";
+							break;
+						case 4:
+							std::cout << "long\n";
+							break;
+						case 7: {
+							uint16_t cpool_index = m_stream->read<uint16_t>();
+							std::cout << "cpool_index: " << cpool_index << "\n";
+						} break;
+						case 8: {
+							uint16_t offset = m_stream->read<uint16_t>();
+							std::cout << "offset: " << offset << "\n";
+						} break;
+						default:
+							throw std::runtime_error("unknown tag");
+						}
+					}
 				} else if (frame_type == 255) {
 					// full_frame
 					uint16_t offset_delta = m_stream->read<uint16_t>();
@@ -250,6 +274,11 @@ void ClassLoader::load_class() {
 			// FIXME delete buffer for now
 			// delete[] buffer;
 		} break;
+		case ConstPoolTag::Long: {
+			int64_t value = m_stream->read<int64_t>();
+			constant_pool.push_back(ConstPoolEntry{
+				.tag = ConstPoolTag::Long, .numbers = {.long_integer = value}});
+		} break;
 		case ConstPoolTag::String: {
 			uint16_t string_index = m_stream->read<uint16_t>();
 			constant_pool.push_back(ConstPoolEntry{ConstPoolTag::String});
@@ -266,7 +295,10 @@ void ClassLoader::load_class() {
 		case ConstPoolTag::MethodRef: {
 			uint16_t class_idx = m_stream->read<uint16_t>();
 			uint16_t name_and_type_idx = m_stream->read<uint16_t>();
-			constant_pool.push_back(ConstPoolEntry{ConstPoolTag::MethodRef});
+			constant_pool.push_back(
+				ConstPoolEntry{.tag = ConstPoolTag::MethodRef,
+							   .class_index = class_idx,
+							   .name_and_type_index = name_and_type_idx});
 		} break;
 		case ConstPoolTag::NameAndType: {
 			uint16_t name_idx = m_stream->read<uint16_t>();

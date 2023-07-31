@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cppjvm/stack.h>
+#include <iostream>
 
 // Shamelessly stolen from stackoverflow
 // Why doesn't LIBC have this though
@@ -16,7 +17,13 @@
 // FIXME maybe stack items should be assosciated with primitives
 void Stack::push(int32_t v) { m_stack.push_back(htonl(v)); }
 
-void Stack::push_64(int64_t v) { assert(!"Implement me"); }
+void Stack::push_64(int64_t v) {
+	// split the 64 bit value into two 32 bit values
+	// and push them onto the stack
+	// FIXME this is probably endianess dependant
+	m_stack.push_back(htonl((uint32_t)(v >> 32)));
+	m_stack.push_back(htonl((uint32_t)(v & 0xFFFFFFFF)));
+}
 
 // FIXME raise error when we try to access stuff from an empty stack
 int32_t Stack::pop() {
@@ -25,11 +32,30 @@ int32_t Stack::pop() {
 	return v;
 }
 
-int64_t Stack::pop_64() { assert(!"Implement me"); }
+int64_t Stack::pop_64() {
+	// FIXME this is probably endianess dependant
+	int64_t v = ntohl(m_stack.back());
+	m_stack.pop_back();
+	v = (v << 32) | ntohl(m_stack.back());
+	m_stack.pop_back();
+	return v;
+}
 
 int32_t Stack::peek() {
 	int32_t v = ntohl(m_stack.back());
 	return v;
 }
 
-int64_t Stack::peek_64() { assert(!"Implement me"); }
+int64_t Stack::peek_64() {
+	// FIXME this is probably endianess dependant
+	int64_t v = ntohl(m_stack.back());
+	v = (v << 32) | ntohl(m_stack.back());
+	return v;
+}
+
+void Stack::dump_stack() {
+	std::cout << "Stack dump:\n";
+	for (auto &item : m_stack) {
+		std::cout << "\t" << ntohl(item) << "\n";
+	}
+}

@@ -4,14 +4,14 @@ OBJS = cppjvm/classloader.o \
 	   cppjvm/main.o \
 	   cppjvm/stack.o
 
-CXXFLAGS=-I. -g -fsanitize=undefined -MMD -MP 
+CXXFLAGS=-I. -g -fsanitize=undefined -MMD -MP -std=c++20
 
 CPPJVM=jvm
 
 all: $(CPPJVM)
 
 run: $(CPPJVM)
-	./$(CPPJVM)
+	./$(CPPJVM) $(PROGRAM_ARGS)
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
