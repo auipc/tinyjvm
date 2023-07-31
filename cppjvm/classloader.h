@@ -86,6 +86,7 @@ struct ConstPoolEntry {
 
 	uint16_t class_index;
 	uint16_t name_and_type_index;
+	uint16_t name_index;
 };
 
 struct Method {
@@ -93,11 +94,12 @@ struct Method {
 	uint16_t max_locals;
 	uint32_t code_length;
 	uint8_t *code;
+	uint16_t class_index;
 };
 
 class ClassLoader {
   public:
-	ClassLoader(std::string filename);
+	ClassLoader(std::string class_name, std::string filename);
 	~ClassLoader();
 	void load_class();
 	std::map<std::string, Method> methods;
@@ -105,6 +107,7 @@ class ClassLoader {
 		return constant_pool.at(index - 1);
 	}
 
+	std::map<uint16_t, std::string> classes;
   private:
 	void read_attributes(char *utf8, size_t utf8_length, uint16_t count);
 	void read(char *buffer, size_t size);
@@ -112,4 +115,5 @@ class ClassLoader {
 	// void read_const_pool(ClassFile_1& cfile);
 	ClassFileStream *m_stream = nullptr;
 	std::string m_filename;
+	std::string m_class_name;
 };

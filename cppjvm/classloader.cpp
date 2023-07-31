@@ -100,7 +100,8 @@ uint16_t ClassFileStream::read_u2() {
 	return u2;
 }
 
-ClassLoader::ClassLoader(std::string filename) : m_filename(filename) {}
+ClassLoader::ClassLoader(std::string class_name, std::string filename)
+	: m_class_name(class_name), m_filename(filename) {}
 
 ClassLoader::~ClassLoader() {}
 
@@ -284,8 +285,9 @@ void ClassLoader::load_class() {
 			constant_pool.push_back(ConstPoolEntry{ConstPoolTag::String});
 		} break;
 		case ConstPoolTag::Class: {
-			uint16_t name_index = m_stream->read<uint16_t>();
-			constant_pool.push_back(ConstPoolEntry{ConstPoolTag::Class});
+			uint16_t name_idx = m_stream->read<uint16_t>();
+			constant_pool.push_back(ConstPoolEntry{
+				.tag = ConstPoolTag::Class, .name_index = name_idx});
 		} break;
 		case ConstPoolTag::FieldRef: {
 			uint16_t class_idx = m_stream->read<uint16_t>();
@@ -304,7 +306,9 @@ void ClassLoader::load_class() {
 			uint16_t name_idx = m_stream->read<uint16_t>();
 			uint16_t descriptor_idx = m_stream->read<uint16_t>();
 			auto name = get_const_pool_entry(name_idx);
-			constant_pool.push_back(ConstPoolEntry{ConstPoolTag::NameAndType, name.utf8, name.utf8_length});
+			// FIXME include descriptor
+			constant_pool.push_back(ConstPoolEntry{
+				ConstPoolTag::NameAndType, name.utf8, name.utf8_length});
 		} break;
 		default:
 			throw std::runtime_error("Unknown constant pool tag");
@@ -353,6 +357,28 @@ void ClassLoader::load_class() {
 			uint16_t attributes_count = m_stream->read<uint16_t>();
 			read_attributes(cp_entry.utf8, cp_entry.utf8_length,
 							attributes_count);
+		}
+	}
+
+	// Iterate through constant pool method refs and match them with classes
+	std::vector<std::string> method_names;
+	for (int i = 0; i < constant_pool.size(); i++) {
+		auto entry = constant_pool.at(i);
+		// Resolve main method's class index
+		if (entry.tag == ConstPoolTag::Class) {
+			auto name = get_const_pool_entry(entry.name_index);
+			if (strncmp(name.utf8, m_class_name.c_str(), name.utf8_length) == 0) {
+				methods["main"].class_index = i + 1;
+				std::cout << "main class index: " << methods["main"].class_index
+						  << "\n";
+			}
+			classes[i] = std::string(name.utf8, name.utf8_length);
+		}
+
+		if (entry.tag == ConstPoolTag::MethodRef) {
+			auto name = get_const_pool_entry(entry.class_index);
+			auto name_and_type = get_const_pool_entry(entry.name_and_type_index);
+			methods[name_and_type.utf8].class_index = entry.class_index;
 		}
 	}
 

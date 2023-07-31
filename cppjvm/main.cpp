@@ -7,7 +7,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	ClassLoader *cl = new ClassLoader(std::string(argv[1]));
+	ClassLoader *cl = new ClassLoader("Program", std::string(argv[1]));
 	cl->load_class();
 	JVM *jvm = new JVM(cl);
 	jvm->run();
