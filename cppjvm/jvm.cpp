@@ -40,7 +40,7 @@ void JVM::run() {
 		interpret_opcode(opcode);
 		if ((get_program_counter()) >
 			stack_frame().operating_bytecode.code_length)
-			exit("End of bytecode");
+			exit("End of bytecode", 1);
 	} while (!m_exit);
 }
 
@@ -106,6 +106,14 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	// ICONST_2
 	case 0x05:
 		operand_stack().push(2);
+		break;
+	// ICONST_3
+	case 0x06:
+		operand_stack().push(3);
+		break;
+	// ICONST_4
+	case 0x07:
+		operand_stack().push(4);
 		break;
 	// ICONST_5
 	case 0x08:
@@ -370,7 +378,7 @@ void JVM::interpret_opcode(uint8_t opcode) {
 		printf("Unknown opcode 0x%x encountered, m_pc = %d exiting...\n",
 			   opcode, get_program_counter());
 		fflush(stdout);
-		exit("Bad opcode");
+		exit("Bad opcode", 1);
 		break;
 	}
 }

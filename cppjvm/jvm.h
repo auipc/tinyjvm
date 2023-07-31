@@ -14,10 +14,13 @@ class JVM {
 	JVM(ClassLoader *classloader);
 	~JVM();
 	void run();
-	inline void exit(const char *reason) {
+	inline void exit(const char *reason, int code=0) {
 		std::cout << "exiting: " << reason << "\n";
+		m_exitcode = code;
 		m_exit = true;
 	}
+
+	int exitcode() { return m_exitcode; }
 
   private:
 	void lstore(uint16_t index, int64_t value);
@@ -76,6 +79,7 @@ class JVM {
 	}
 
 	bool m_exit = false;
+	int m_exitcode = 0;
 	std::vector<StackFrame> m_stack;
 	StackFrame *m_current_stack_frame;
 	ClassLoader *m_classloader;

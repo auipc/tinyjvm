@@ -1,4 +1,4 @@
-class Program {
+class Program2 {
     static void a_function_call(int a) {
         return;
     }
