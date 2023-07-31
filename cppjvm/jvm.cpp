@@ -4,15 +4,6 @@
 #include <cppjvm/jvm.h>
 #include <iostream>
 
-// I think it's permissible to have bytecode and memory seperate.
-/*
-uint8_t bytecode[] = {
-	0x1a, 0x1b, 0x60, 0x57, 0xb1
-};
-
-uint8_t bytecode_size = sizeof(bytecode) / sizeof(bytecode[0]);
-*/
-
 JVM::JVM(ClassLoader *classloader) : m_classloader(classloader) {
 	// auto root_stack_frame = StackFrame();
 	// m_stack.push_back(root_stack_frame);
@@ -29,23 +20,26 @@ JVM::~JVM() {}
 // case there's implementation specific quirks in the standard java lib Maybe we
 // should write our own :^)
 void JVM::run() {
-	operating_bytecode = m_classloader->methods[std::string("main")];
+	stack_frame().operating_bytecode =
+		m_classloader->methods[std::string("main")];
 	for (auto &pair : m_classloader->methods) {
 		std::cout << "lol\n";
 		std::cout << pair.first << "\n";
 		std::cout << pair.second.code_length << "\n";
 		std::cout << "lol\n";
 	}
-	std::cout << operating_bytecode.code_length << "\n";
+	std::cout << stack_frame().operating_bytecode.code_length << "\n";
 	std::cout << get_program_counter() << "\n";
 	do {
-		uint8_t opcode = bytecode_fetch_byte(operating_bytecode.code,
-											 operating_bytecode.code_length,
-											 get_program_counter());
+		uint8_t opcode =
+			bytecode_fetch_byte(stack_frame().operating_bytecode.code,
+								stack_frame().operating_bytecode.code_length,
+								get_program_counter());
 		incr_program_counter();
 		std::cout << "opcode: " << std::hex << (int)opcode << std::dec << "\n";
 		interpret_opcode(opcode);
-		if ((get_program_counter() + 1) > operating_bytecode.code_length)
+		if ((get_program_counter() + 1) >
+			stack_frame().operating_bytecode.code_length)
 			exit("End of bytecode");
 	} while (!m_exit);
 }
@@ -77,6 +71,21 @@ void JVM::lstore(uint16_t index, int64_t value) {
 			"FIXME allocate more variables if we need them");
 	}
 	stack_frame().local_variables[index] = value;
+}
+
+void JVM::return_from_method() {
+	std::cout << "return\n";
+	// If our current stackframe's parent is null we return
+	if (!stack_frame().parent) {
+		std::cout << "Exit from main"
+				  << "\n";
+		exit("Exit from main");
+		return;
+	}
+
+	StackFrame *previous = &stack_frame();
+	m_current_stack_frame = stack_frame().parent;
+	delete previous;
 }
 
 void JVM::interpret_opcode(uint8_t opcode) {
@@ -114,9 +123,10 @@ void JVM::interpret_opcode(uint8_t opcode) {
 		break;
 	// ISTORE
 	case 0x36: {
-		uint8_t index = bytecode_fetch_byte(operating_bytecode.code,
-											operating_bytecode.code_length,
-											get_program_counter());
+		uint8_t index =
+			bytecode_fetch_byte(stack_frame().operating_bytecode.code,
+								stack_frame().operating_bytecode.code_length,
+								get_program_counter());
 		incr_program_counter();
 		/*if (index > 10) {
 			throw std::runtime_error("Variable index out of bounds");
@@ -148,9 +158,10 @@ void JVM::interpret_opcode(uint8_t opcode) {
 		break;
 	// LSTORE
 	case 0x37: {
-		uint8_t index = bytecode_fetch_byte(operating_bytecode.code,
-											operating_bytecode.code_length,
-											get_program_counter());
+		uint8_t index =
+			bytecode_fetch_byte(stack_frame().operating_bytecode.code,
+								stack_frame().operating_bytecode.code_length,
+								get_program_counter());
 		incr_program_counter();
 		lstore(index, operand_stack().pop_64());
 		break;
@@ -169,9 +180,10 @@ void JVM::interpret_opcode(uint8_t opcode) {
 		break;
 	// ILOAD
 	case 0x15: {
-		uint8_t index = bytecode_fetch_byte(operating_bytecode.code,
-											operating_bytecode.code_length,
-											get_program_counter());
+		uint8_t index =
+			bytecode_fetch_byte(stack_frame().operating_bytecode.code,
+								stack_frame().operating_bytecode.code_length,
+								get_program_counter());
 		incr_program_counter();
 		// FIXME bounds check
 		std::cout << stack_frame().local_variables[index] << "\n";
@@ -197,9 +209,10 @@ void JVM::interpret_opcode(uint8_t opcode) {
 		break;
 	// LLOAD
 	case 0x16: {
-		uint8_t index = bytecode_fetch_byte(operating_bytecode.code,
-											operating_bytecode.code_length,
-											get_program_counter());
+		uint8_t index =
+			bytecode_fetch_byte(stack_frame().operating_bytecode.code,
+								stack_frame().operating_bytecode.code_length,
+								get_program_counter());
 		incr_program_counter();
 		// FIXME bounds check
 		operand_stack().push_64(stack_frame().local_variables[index]);
@@ -224,13 +237,15 @@ void JVM::interpret_opcode(uint8_t opcode) {
 		break;
 	// IINC
 	case 0x84: {
-		uint8_t index = bytecode_fetch_byte(operating_bytecode.code,
-											operating_bytecode.code_length,
-											get_program_counter());
+		uint8_t index =
+			bytecode_fetch_byte(stack_frame().operating_bytecode.code,
+								stack_frame().operating_bytecode.code_length,
+								get_program_counter());
 		incr_program_counter();
-		int8_t constant = bytecode_fetch_byte(operating_bytecode.code,
-											  operating_bytecode.code_length,
-											  get_program_counter());
+		int8_t constant =
+			bytecode_fetch_byte(stack_frame().operating_bytecode.code,
+								stack_frame().operating_bytecode.code_length,
+								get_program_counter());
 		incr_program_counter();
 		// FIXME bounds check
 		stack_frame().local_variables[index] += constant;
@@ -240,18 +255,20 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	}
 	// GOTO
 	case 0xa7: {
-		int16_t offset = bytecode_fetch_short(operating_bytecode.code,
-											  operating_bytecode.code_length,
-											  get_program_counter());
+		int16_t offset =
+			bytecode_fetch_short(stack_frame().operating_bytecode.code,
+								 stack_frame().operating_bytecode.code_length,
+								 get_program_counter());
 		std::cout << "goto offset " << offset << "\n";
 		add_program_counter(offset - 1);
 		break;
 	}
 	// BIPUSH
 	case 0x10: {
-		uint8_t value = bytecode_fetch_byte(operating_bytecode.code,
-											operating_bytecode.code_length,
-											get_program_counter());
+		uint8_t value =
+			bytecode_fetch_byte(stack_frame().operating_bytecode.code,
+								stack_frame().operating_bytecode.code_length,
+								get_program_counter());
 		incr_program_counter();
 		std::cout << "BIPUSH " << (int)value << "\n";
 		operand_stack().push(value);
@@ -259,16 +276,20 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	}
 	// SIPUSH
 	case 0x11: {
-		uint16_t value = bytecode_fetch_short(
-			operating_bytecode.code, operating_bytecode.code_length, get_program_counter());
+		uint16_t value =
+			bytecode_fetch_short(stack_frame().operating_bytecode.code,
+								 stack_frame().operating_bytecode.code_length,
+								 get_program_counter());
 		add_program_counter(2);
 		operand_stack().push(value);
 		break;
 	}
 	// IF_ICMPGE
 	case 0xa2: {
-		int16_t offset = bytecode_fetch_short(
-			operating_bytecode.code, operating_bytecode.code_length, get_program_counter());
+		int16_t offset =
+			bytecode_fetch_short(stack_frame().operating_bytecode.code,
+								 stack_frame().operating_bytecode.code_length,
+								 get_program_counter());
 		add_program_counter(2);
 
 		operand_stack().dump_stack();
@@ -280,17 +301,15 @@ void JVM::interpret_opcode(uint8_t opcode) {
 		}
 		break;
 	}
-	// RETURN
-	case 0xb1:
-		std::cout << "return\n";
-		// If our current stackframe's parent is null we return
-		if (!stack_frame().parent) {
-			std::cout << "Exit from main"
-					  << "\n";
-			exit("Exit from main");
-			break;
-		}
-		break;
+	// IRETURN
+	case 0xac: {
+		auto parent = stack_frame().parent;
+		parent->operand_stack.push(operand_stack().pop());
+		return_from_method();
+	} break;
+	case 0xb1: {
+		return_from_method();
+	} break;
 	// POP
 	case 0x57:
 		operand_stack().pop();
@@ -313,8 +332,11 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	}
 	// INVOKESTATIC
 	case 0xb8: {
-		uint16_t index = bytecode_fetch_short(
-			operating_bytecode.code, operating_bytecode.code_length, get_program_counter());
+		// TODO check if method is static
+		uint16_t index =
+			bytecode_fetch_short(stack_frame().operating_bytecode.code,
+								 stack_frame().operating_bytecode.code_length,
+								 get_program_counter());
 		add_program_counter(2);
 		auto cp_entry = m_classloader->get_const_pool_entry(index);
 		if (cp_entry.tag != ConstPoolTag::MethodRef) {
@@ -323,6 +345,22 @@ void JVM::interpret_opcode(uint8_t opcode) {
 			exit("Bad constant pool entry");
 		}
 
+		auto name_and_type =
+			m_classloader->get_const_pool_entry(cp_entry.name_and_type_index);
+
+		if (name_and_type.tag != ConstPoolTag::NameAndType) {
+			std::cout << "Expected CONSTANT_NameAndType, got "
+					  << name_and_type.tag << "\n";
+			exit("Bad constant pool entry");
+		}
+
+		std::cout << name_and_type.utf8 << "\n";
+		m_current_stack_frame = &StackFrame::create(m_current_stack_frame);
+		// TODO check if the method matches the type signature
+		// otherwise the stack will be corrupted and we won't find the function
+		// we're looking for.
+		stack_frame().operating_bytecode =
+			m_classloader->methods[std::string(name_and_type.utf8)];
 
 		break;
 	}

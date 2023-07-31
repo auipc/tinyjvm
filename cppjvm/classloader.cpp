@@ -303,7 +303,8 @@ void ClassLoader::load_class() {
 		case ConstPoolTag::NameAndType: {
 			uint16_t name_idx = m_stream->read<uint16_t>();
 			uint16_t descriptor_idx = m_stream->read<uint16_t>();
-			constant_pool.push_back(ConstPoolEntry{ConstPoolTag::NameAndType});
+			auto name = get_const_pool_entry(name_idx);
+			constant_pool.push_back(ConstPoolEntry{ConstPoolTag::NameAndType, name.utf8, name.utf8_length});
 		} break;
 		default:
 			throw std::runtime_error("Unknown constant pool tag");

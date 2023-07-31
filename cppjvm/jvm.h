@@ -22,32 +22,30 @@ class JVM {
   private:
 	void lstore(uint16_t index, int64_t value);
 	void istore(uint16_t index, int32_t value);
+	void return_from_method();
+
 	struct StackFrame {
 		StackFrame *parent = nullptr;
+		Method operating_bytecode;
 		Stack operand_stack;
 		uint32_t pc;
 		// FIXME use VarInt
 		// We should probably create a generic class called Variable that will
 		// be able to hold anything and everything.
 		std::vector<int64_t> local_variables;
-		static StackFrame create(StackFrame *parent) {
-			auto stack_frame = StackFrame();
-			stack_frame.parent = parent;
+		static StackFrame& create(StackFrame *parent) {
+			StackFrame* stack_frame = new StackFrame();
+			stack_frame->parent = parent;
 			// Add 10 empty local variables
 			for (int i = 0; i <= 10; i++)
-				stack_frame.local_variables.push_back(0);
+				stack_frame->local_variables.push_back(0);
 
-			if (parent != nullptr || parent != NULL) {
+			/*if (parent != nullptr) {
 				parent->operand_stack.push((uint64_t)&stack_frame);
-			}
-			return stack_frame;
+			}*/
+			return *stack_frame;
 		}
 	};
-
-	bool m_exit = false;
-	Method operating_bytecode;
-	std::vector<StackFrame> m_stack;
-	StackFrame *m_current_stack_frame;
 
 	inline StackFrame &stack_frame() { return *m_current_stack_frame; }
 	inline Stack &operand_stack() {
@@ -77,5 +75,8 @@ class JVM {
 		m_current_stack_frame->pc += pc;
 	}
 
+	bool m_exit = false;
+	std::vector<StackFrame> m_stack;
+	StackFrame *m_current_stack_frame;
 	ClassLoader *m_classloader;
 };
