@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import os
 
-JAVA_COMPILER="~/.jdks/corretto-1.8.0_362/bin/javac"
+JAVA_COMPILER="javac"
 JAVA_VM="./jvm"
 
 for file in os.listdir("tests"):
