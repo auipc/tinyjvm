@@ -94,6 +94,11 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	case 0:
 		printf("NOP %d\n", get_program_counter());
 		break;
+	// ICONST_M1
+	case 0x02:
+		// Push -1 onto the stack
+		operand_stack().push(-1);
+		break;
 	// ICONST_0
 	case 0x03:
 		// Push 0 onto the stack
