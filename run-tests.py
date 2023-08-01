@@ -16,7 +16,7 @@ for file in os.listdir("tests"):
     class_file = os.path.join("tests", class_filename)
     description_file = os.path.join("tests", description_filename)
     desc_file = open(description_file, "r")
-    description = desc_file.read()
+    description = desc_file.read().splitlines()[0]
     desc_file.close()
 
     print(f"Running test {class_name} -- {description}")
