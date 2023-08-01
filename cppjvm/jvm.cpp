@@ -57,6 +57,14 @@ int16_t JVM::bytecode_fetch_short(uint8_t *code, size_t bytecode_size,
 	return value;
 }
 
+int32_t JVM::bytecode_fetch_int(uint8_t *code, size_t bytecode_size,
+								  size_t ptr) {
+	assert(ptr < bytecode_size);
+	int32_t value = code[ptr] << 24 | code[ptr + 1] << 16 | code[ptr + 2] << 8 |
+					code[ptr + 3];
+	return value;
+}
+
 void JVM::istore(uint16_t index, int32_t value) {
 	if (index > 10) {
 		throw std::runtime_error(
@@ -71,6 +79,11 @@ void JVM::lstore(uint16_t index, int64_t value) {
 			"FIXME allocate more variables if we need them");
 	}
 	stack_frame().local_variables[index] = value;
+}
+
+
+void JVM::jump_to(int32_t offset) {
+	add_program_counter(offset - 1);
 }
 
 void JVM::return_from_method() {
@@ -273,7 +286,16 @@ void JVM::interpret_opcode(uint8_t opcode) {
 								 stack_frame().operating_bytecode.code_length,
 								 get_program_counter());
 		std::cout << "goto offset " << offset << "\n";
-		add_program_counter(offset - 1);
+		jump_to(offset);
+		break;
+	}
+	// GOTO_W
+	case 0xc8: {
+		int32_t offset =
+			bytecode_fetch_int(stack_frame().operating_bytecode.code,
+							   stack_frame().operating_bytecode.code_length,
+							   get_program_counter());
+		jump_to(offset);
 		break;
 	}
 	// BIPUSH

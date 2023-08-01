@@ -25,6 +25,7 @@ class JVM {
   private:
 	void lstore(uint16_t index, int64_t value);
 	void istore(uint16_t index, int32_t value);
+	void jump_to(int32_t offset);
 	void return_from_method();
 
 	struct StackFrame {
@@ -59,6 +60,8 @@ class JVM {
 								size_t ptr);
 	int16_t bytecode_fetch_short(uint8_t *code, size_t bytecode_size,
 								 size_t ptr);
+	int32_t bytecode_fetch_int(uint8_t *code, size_t bytecode_size,
+								  size_t ptr);
 
 	void interpret_opcode(uint8_t opcode);
 	inline uint32_t incr_program_counter() {
