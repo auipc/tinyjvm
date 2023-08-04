@@ -13,15 +13,13 @@ JVM::JVM(ClassLoader *classloader) : m_classloader(classloader) {
 	m_current_stack_frame = &m_stack[0];
 }
 
-JVM::~JVM() {}
-
 // TODO allocate memory for attributes of the class and figure out how to
 // resolve dependencies in a clean way so we can call Object's initializer in
 // case there's implementation specific quirks in the standard java lib Maybe we
 // should write our own :^)
 void JVM::run() {
-	stack_frame().operating_bytecode =
-		m_classloader->methods[std::string("main")];
+	stack_frame().set_operating_bytecode(
+		m_classloader->methods[std::string("main")]);
 	for (auto &pair : m_classloader->methods) {
 		std::cout << "lol\n";
 		std::cout << pair.first << "\n";
@@ -66,7 +64,7 @@ int32_t JVM::bytecode_fetch_int(uint8_t *code, size_t bytecode_size,
 }
 
 void JVM::istore(uint16_t index, int32_t value) {
-	if (index > 10) {
+	if (index > max_locals()) {
 		throw std::runtime_error(
 			"FIXME allocate more variables if we need them");
 	}
@@ -74,7 +72,7 @@ void JVM::istore(uint16_t index, int32_t value) {
 }
 
 void JVM::lstore(uint16_t index, int64_t value) {
-	if (index > 9) {
+	if (index > max_locals()) {
 		throw std::runtime_error(
 			"FIXME allocate more variables if we need them");
 	}
@@ -137,12 +135,13 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	// LCONST_0
 	case 0x09:
 		// Our stack really should just use VarInts lol what is this
-		operand_stack().push(0L);
+		operand_stack().push_64(0L);
 		break;
 	// LCONST_1
 	case 0x0a:
 		// Our stack really should just use VarInts lol what is this
-		operand_stack().push(1L);
+		operand_stack().push_64(1L);
+		std::cout << "LCONST_1 " << operand_stack().peek_64() << "\n";
 		break;
 	// ISTORE
 	case 0x36: {
@@ -379,10 +378,12 @@ void JVM::interpret_opcode(uint8_t opcode) {
 	}
 	// LADD
 	case 0x61: {
-		int64_t a = operand_stack().pop();
-		int64_t b = operand_stack().pop();
-		operand_stack().push(a + b);
-		std::cout << "a + b = " << operand_stack().peek() << "\n";
+		int64_t a = operand_stack().pop_64();
+		int64_t b = operand_stack().pop_64();
+		std::cout << "a: " << a << " b: " << b << "\n";
+		std::cout << "a + b = " << a + b << "\n";
+		operand_stack().push_64(a + b);
+		std::cout << "a + b = " << operand_stack().peek_64() << "\n";
 		break;
 	}
 	// INVOKESTATIC
@@ -417,9 +418,26 @@ void JVM::interpret_opcode(uint8_t opcode) {
 		// TODO check if the method matches the type signature
 		// otherwise the stack will be corrupted and we won't find the function
 		// we're looking for.
-		stack_frame().operating_bytecode =
-			m_classloader->methods[std::string(name_str.utf8)];
+		stack_frame().set_operating_bytecode(
+			m_classloader->methods[std::string(name_str.utf8)]);
 
+		break;
+	}
+	// LDC2_W
+	case 0x14: {
+		uint16_t index =
+			bytecode_fetch_short(stack_frame().operating_bytecode.code,
+								 stack_frame().operating_bytecode.code_length,
+								 get_program_counter());
+		add_program_counter(2);
+		auto cp_entry = m_classloader->get_const_pool_entry(index);
+		if (cp_entry.tag != ConstPoolTag::Long) {
+			std::cout << "Expected CONSTANT_Long, got " << cp_entry.tag << "\n";
+			exit("Bad constant pool entry");
+		}
+		std::cout << "Pushing long " << cp_entry.numbers.long_integer << "\n";
+		operand_stack().push_64(cp_entry.numbers.long_integer);
+		std::cout << "Long pushed " << operand_stack().peek_64() << "\n";
 		break;
 	}
 	default:

@@ -112,6 +112,10 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 		uint32_t attribute_length = m_stream->read<uint32_t>();
 		std::cout << "idx m " << attribute_name_idx - 1 << "\n";
 		auto cp_entry = constant_pool.at(attribute_name_idx - 1);
+
+		// Skip over all entries not of type Utf8
+		if (cp_entry.tag != ConstPoolTag::Utf8)
+			continue;
 		// uint8_t* info = new uint8_t[attribute_length];
 		// m_stream->read_length(reinterpret_cast<void*>(info),
 		// attribute_length);
@@ -279,6 +283,15 @@ void ClassLoader::load_class() {
 			int64_t value = m_stream->read<int64_t>();
 			constant_pool.push_back(ConstPoolEntry{
 				.tag = ConstPoolTag::Long, .numbers = {.long_integer = value}});
+			// All 8-byte constants take up two entries in the constant_pool
+			// table of the class file. If a CONSTANT_Long_info or
+			// CONSTANT_Double_info structure is the entry at index n in the
+			// constant_pool table, then the next usable entry in the table is
+			// located at index n+2. The constant_pool index n+1 must be valid
+			// but is considered unusable.
+			i++;
+			constant_pool.push_back(ConstPoolEntry{
+				.tag = ConstPoolTag::Null});
 		} break;
 		case ConstPoolTag::String: {
 			uint16_t string_index = m_stream->read<uint16_t>();
@@ -286,8 +299,8 @@ void ClassLoader::load_class() {
 		} break;
 		case ConstPoolTag::Class: {
 			uint16_t name_idx = m_stream->read<uint16_t>();
-			constant_pool.push_back(ConstPoolEntry{
-				.tag = ConstPoolTag::Class, .name_index = name_idx});
+			constant_pool.push_back(ConstPoolEntry{.tag = ConstPoolTag::Class,
+												   .name_index = name_idx});
 		} break;
 		case ConstPoolTag::FieldRef: {
 			uint16_t class_idx = m_stream->read<uint16_t>();
@@ -366,7 +379,8 @@ void ClassLoader::load_class() {
 		// Resolve main method's class index
 		if (entry.tag == ConstPoolTag::Class) {
 			auto name = get_const_pool_entry(entry.name_index);
-			if (strncmp(name.utf8, m_class_name.c_str(), name.utf8_length) == 0) {
+			if (strncmp(name.utf8, m_class_name.c_str(), name.utf8_length) ==
+				0) {
 				methods["main"].class_index = i + 1;
 				std::cout << "main class index: " << methods["main"].class_index
 						  << "\n";
@@ -376,7 +390,8 @@ void ClassLoader::load_class() {
 
 		if (entry.tag == ConstPoolTag::MethodRef) {
 			auto name = get_const_pool_entry(entry.class_index);
-			auto name_and_type = get_const_pool_entry(entry.name_and_type_index);
+			auto name_and_type =
+				get_const_pool_entry(entry.name_and_type_index);
 			auto name_str = get_const_pool_entry(name_and_type.name_index);
 			methods[name_str.utf8].class_index = entry.class_index;
 		}

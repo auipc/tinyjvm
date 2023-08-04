@@ -22,10 +22,12 @@ class Variable {
 	};
 	Variable() {
 		m_data = nullptr;
+		m_is_null = true;
 	}
 
 	~Variable() {
-		delete[] m_data;
+		if (!m_is_null)
+			delete[] m_data;
 	}
 
 	template <typename T> T get() {
@@ -51,13 +53,16 @@ class Variable {
 	}
 
 	template <typename T> void set(Tags new_tag, T value) {
-		if (m_data) {
+		//if (new_tag == Tags::Long)
+
+		if (!m_is_null) {
 			if (new_tag != m_tag) {
 				delete[] m_data;
 				m_data = new uint8_t[sizeof(T)];
 			}
 		} else {
 			m_data = new uint8_t[sizeof(T)];
+			m_is_null = false;
 		}
 
 		m_tag = new_tag;
@@ -70,12 +75,12 @@ class Variable {
   private:
 	Tags m_tag;
 	uint8_t* m_data;
+	bool m_is_null;
 };
 
 class JVM {
   public:
 	JVM(ClassLoader *classloader);
-	~JVM();
 	void run();
 	inline void exit(const char *reason, int code=0) {
 		std::cout << "exiting: " << reason << "\n";
@@ -102,7 +107,8 @@ class JVM {
 		std::vector<std::shared_ptr<Variable>> local_variables;
 
 		StackFrame() {
-			// Add 10 empty local variables
+			pc = 0;
+			// Add empty local variables
 			for (int i = 0; i <= 10; i++) {
 				local_variables.push_back(std::make_shared<Variable>());
 				local_variables.back()->set(Variable::Integer, 0);
@@ -120,6 +126,18 @@ class JVM {
 				parent->operand_stack.push((uint64_t)&stack_frame);
 			}*/
 			return *stack_frame;
+		}
+
+		void set_operating_bytecode(Method method) {
+			operating_bytecode = method;
+
+			// Add empty local variables
+			if (method.max_locals > 10) {
+				for (int i = 0; i < method.max_locals; i++) {
+					local_variables.push_back(std::make_shared<Variable>());
+					local_variables.back()->set(Variable::Integer, 0);
+				}
+			}
 		}
 	};
 
@@ -151,6 +169,10 @@ class JVM {
 
 	inline void add_program_counter(uint32_t pc) {
 		m_current_stack_frame->pc += pc;
+	}
+
+	inline int max_locals() {
+		return m_current_stack_frame->operating_bytecode.max_locals-1;
 	}
 
 	bool m_exit = false;
