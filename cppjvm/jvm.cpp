@@ -58,7 +58,7 @@ int16_t JVM::bytecode_fetch_short(uint8_t *code, size_t bytecode_size,
 }
 
 int32_t JVM::bytecode_fetch_int(uint8_t *code, size_t bytecode_size,
-								  size_t ptr) {
+								size_t ptr) {
 	assert(ptr < bytecode_size);
 	int32_t value = code[ptr] << 24 | code[ptr + 1] << 16 | code[ptr + 2] << 8 |
 					code[ptr + 3];
@@ -70,7 +70,7 @@ void JVM::istore(uint16_t index, int32_t value) {
 		throw std::runtime_error(
 			"FIXME allocate more variables if we need them");
 	}
-	stack_frame().local_variables[index] = value;
+	stack_frame().local_variables[index]->set(Variable::Tags::Integer, value);
 }
 
 void JVM::lstore(uint16_t index, int64_t value) {
@@ -78,13 +78,10 @@ void JVM::lstore(uint16_t index, int64_t value) {
 		throw std::runtime_error(
 			"FIXME allocate more variables if we need them");
 	}
-	stack_frame().local_variables[index] = value;
+	stack_frame().local_variables[index]->set(Variable::Tags::Integer, value);
 }
 
-
-void JVM::jump_to(int32_t offset) {
-	add_program_counter(offset - 1);
-}
+void JVM::jump_to(int32_t offset) { add_program_counter(offset - 1); }
 
 void JVM::return_from_method() {
 	std::cout << "return\n";
@@ -212,26 +209,32 @@ void JVM::interpret_opcode(uint8_t opcode) {
 								get_program_counter());
 		incr_program_counter();
 		// FIXME bounds check
-		std::cout << stack_frame().local_variables[index] << "\n";
-		operand_stack().push(stack_frame().local_variables[index]);
+		std::cout << stack_frame().local_variables[index]->get_fault_type<int>()
+				  << "\n";
+		operand_stack().push(
+			stack_frame().local_variables[index]->get_fault_type<int>());
 		std::cout << "ILOAD " << (int)index << "\n";
 		break;
 	}
 	// ILOAD_0
 	case 0x1a:
-		operand_stack().push(stack_frame().local_variables[0]);
+		operand_stack().push(
+			stack_frame().local_variables[0]->get_fault_type<int>());
 		break;
 	// ILOAD_1
 	case 0x1b:
-		operand_stack().push(stack_frame().local_variables[1]);
+		operand_stack().push(
+			stack_frame().local_variables[1]->get_fault_type<int>());
 		break;
 	// ILOAD_2
 	case 0x1c:
-		operand_stack().push(stack_frame().local_variables[2]);
+		operand_stack().push(
+			stack_frame().local_variables[2]->get_fault_type<int>());
 		break;
 	// ILOAD_3
 	case 0x1d:
-		operand_stack().push(stack_frame().local_variables[3]);
+		operand_stack().push(
+			stack_frame().local_variables[3]->get_fault_type<int>());
 		break;
 	// LLOAD
 	case 0x16: {
@@ -241,25 +244,30 @@ void JVM::interpret_opcode(uint8_t opcode) {
 								get_program_counter());
 		incr_program_counter();
 		// FIXME bounds check
-		operand_stack().push_64(stack_frame().local_variables[index]);
+		operand_stack().push_64(
+			stack_frame().local_variables[index]->get_fault_type<int64_t>());
 		std::cout << "LLOAD " << (int)index << "\n";
 		break;
 	}
 	// LLOAD_0
 	case 0x1e:
-		operand_stack().push_64(stack_frame().local_variables[0]);
+		operand_stack().push_64(
+			stack_frame().local_variables[0]->get_fault_type<int64_t>());
 		break;
 	// LLOAD_1
 	case 0x1f:
-		operand_stack().push_64(stack_frame().local_variables[1]);
+		operand_stack().push_64(
+			stack_frame().local_variables[1]->get_fault_type<int64_t>());
 		break;
 	// LLOAD_2
 	case 0x20:
-		operand_stack().push_64(stack_frame().local_variables[2]);
+		operand_stack().push_64(
+			stack_frame().local_variables[2]->get_fault_type<int64_t>());
 		break;
 	// LLOAD_3
 	case 0x21:
-		operand_stack().push_64(stack_frame().local_variables[3]);
+		operand_stack().push_64(
+			stack_frame().local_variables[3]->get_fault_type<int64_t>());
 		break;
 	// IINC
 	case 0x84: {
@@ -274,7 +282,11 @@ void JVM::interpret_opcode(uint8_t opcode) {
 								get_program_counter());
 		incr_program_counter();
 		// FIXME bounds check
-		stack_frame().local_variables[index] += constant;
+		// Lengthy
+		stack_frame().local_variables[index].get()->set(
+			Variable::Tags::Integer,
+			stack_frame().local_variables[index].get()->get_fault_type<int>() +
+				constant);
 		std::cout << "IINC " << (int)index << " " << (int)constant << "\n";
 		std::cout << "new_pc: " << get_program_counter() << "\n";
 		break;
@@ -398,7 +410,8 @@ void JVM::interpret_opcode(uint8_t opcode) {
 		}
 
 		// FIXME utf8 isn't null terminated. sort of a big issue
-		auto name_str = m_classloader->get_const_pool_entry(name_and_type.name_index);
+		auto name_str =
+			m_classloader->get_const_pool_entry(name_and_type.name_index);
 		std::cout << name_str.utf8 << "\n";
 		m_current_stack_frame = &StackFrame::create(m_current_stack_frame);
 		// TODO check if the method matches the type signature

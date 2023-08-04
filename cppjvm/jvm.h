@@ -6,8 +6,71 @@
 #include <iostream>
 #include <stdio.h>
 #include <vector>
+#include <cassert>
+#include <memory>
 
 class ClassLoader;
+
+class Variable {
+  public:
+	enum Tags {
+		Integer = 0,
+		Float = 1,
+		Long = 2,
+		Double = 3,
+		ObjectReference = 4,
+	};
+	Variable() {
+		m_data = nullptr;
+	}
+
+	~Variable() {
+		delete[] m_data;
+	}
+
+	template <typename T> T get() {
+		return *(T *)m_data;
+	}
+
+	template <typename T> T get_fault_type() {
+		if (!m_data)
+			throw std::runtime_error("Variable is null");
+
+		if (m_tag == Tags::Integer != std::is_same<T, int32_t>::value)
+			throw std::runtime_error("Invalid type");
+		if (m_tag == Tags::Float != std::is_same<T, float>::value)
+			throw std::runtime_error("Invalid type");
+		if (m_tag == Tags::Long != std::is_same<T, int64_t>::value)
+			throw std::runtime_error("Invalid type");
+		if (m_tag == Tags::Double != std::is_same<T, double>::value)
+			throw std::runtime_error("Invalid type");
+		if (m_tag == Tags::ObjectReference != std::is_same<T, size_t>::value)
+			throw std::runtime_error("Invalid type");
+
+		return *(T *)m_data;
+	}
+
+	template <typename T> void set(Tags new_tag, T value) {
+		if (m_data) {
+			if (new_tag != m_tag) {
+				delete[] m_data;
+				m_data = new uint8_t[sizeof(T)];
+			}
+		} else {
+			m_data = new uint8_t[sizeof(T)];
+		}
+
+		m_tag = new_tag;
+		*(T *)m_data = value;
+	}
+
+	// Disallow copying the Variable class
+	Variable(const Variable &) = delete;
+	Variable &operator=(const Variable &) = delete;
+  private:
+	Tags m_tag;
+	uint8_t* m_data;
+};
 
 class JVM {
   public:
@@ -36,13 +99,22 @@ class JVM {
 		// FIXME use VarInt
 		// We should probably create a generic class called Variable that will
 		// be able to hold anything and everything.
-		std::vector<int64_t> local_variables;
+		std::vector<std::shared_ptr<Variable>> local_variables;
+
+		StackFrame() {
+			// Add 10 empty local variables
+			for (int i = 0; i <= 10; i++) {
+				local_variables.push_back(std::make_shared<Variable>());
+				local_variables.back()->set(Variable::Integer, 0);
+			}
+		}
+
 		static StackFrame& create(StackFrame *parent) {
 			StackFrame* stack_frame = new StackFrame();
 			stack_frame->parent = parent;
 			// Add 10 empty local variables
-			for (int i = 0; i <= 10; i++)
-				stack_frame->local_variables.push_back(0);
+			//for (int i = 0; i <= 10; i++)
+			//	stack_frame->local_variables.push_back(0);
 
 			/*if (parent != nullptr) {
 				parent->operand_stack.push((uint64_t)&stack_frame);
