@@ -357,6 +357,14 @@ void JVM::interpret_opcode(uint8_t opcode) {
 		std::cout << "a + b = " << operand_stack().peek() << "\n";
 		break;
 	}
+	// IMUL
+	case 0x68: {
+		int32_t a = operand_stack().pop();
+		int32_t b = operand_stack().pop();
+		operand_stack().push(a * b);
+		std::cout << "a * b = " << operand_stack().peek() << "\n";
+		break;
+	}
 	// LADD
 	case 0x61: {
 		int64_t a = operand_stack().pop();
