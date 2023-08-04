@@ -74,11 +74,11 @@ void JVM::istore(uint16_t index, int32_t value) {
 }
 
 void JVM::lstore(uint16_t index, int64_t value) {
-	if (index > 10) {
+	if (index > 9) {
 		throw std::runtime_error(
 			"FIXME allocate more variables if we need them");
 	}
-	stack_frame().local_variables[index]->set(Variable::Tags::Integer, value);
+	stack_frame().local_variables[index]->set(Variable::Tags::Long, value);
 }
 
 void JVM::jump_to(int32_t offset) { add_program_counter(offset - 1); }
