@@ -130,6 +130,10 @@ void Opcodes::LDC2_W(JVM &context) {
 	std::cout << "Long pushed " << context.operand_stack().peek_64() << "\n";
 }
 
+void Opcodes::RETURN(JVM &context) {
+	context.return_from_method();
+}
+
 void Opcodes::IRETURN(JVM &context) {
 	auto parent = context.stack_frame().parent;
 	parent->operand_stack.push(context.operand_stack().pop());
@@ -146,6 +150,11 @@ void Opcodes::IMUL(JVM &context) {
 	int32_t b = context.operand_stack().pop();
 	context.operand_stack().push(a * b);
 	std::cout << "a * b = " << context.operand_stack().peek() << "\n";
+}
+
+void Opcodes::ISTORE(JVM &context) {
+	int index = context.opcode_parameters.at(0).get()->get_fault_type<int>();
+	context.istore((uint8_t)index, context.operand_stack().pop());
 }
 
 void Opcodes::LSTORE(JVM &context) {
@@ -188,6 +197,7 @@ std::map<uint8_t, OpcodeHandle> opcode_map = {
 
 	{0x16, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Byte, .function = Opcodes::LLOAD}},
 
+	{0x36, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Byte, .function = Opcodes::ISTORE}},
 	{0x37, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Byte, .function = Opcodes::LSTORE}},
 
 	{0x3b, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ISTORE_0}},
@@ -203,6 +213,7 @@ std::map<uint8_t, OpcodeHandle> opcode_map = {
 	{0x61, OpcodeHandle{.no_parameters = 0, .function = Opcodes::LADD}},
 	{0x68, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IMUL}},
 
+	{0xb1, OpcodeHandle{.no_parameters = 0, .function = Opcodes::RETURN}},
 	{0xac, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IRETURN}},
 
 	{0xb8, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Short, .function = Opcodes::INVOKESTATIC}},
@@ -271,7 +282,7 @@ void JVM::run() {
 		opcode_parameters.clear();
 
 		//interpret_opcode(opcode);
-		if ((get_program_counter()+1) >
+		if ((get_program_counter()) >
 			stack_frame().operating_bytecode.code_length)
 			exit("End of bytecode", 1);
 	} while (!m_exit);

@@ -32,6 +32,7 @@ namespace Opcodes {
 	void ISTORE_2(JVM& context);
 	void ISTORE_3(JVM& context);
 
+	void ISTORE(JVM& context);
 	void LSTORE(JVM& context);
 
 	void LLOAD(JVM& context);
@@ -46,6 +47,7 @@ namespace Opcodes {
 
 	void LDC2_W(JVM& context);
 
+	void RETURN(JVM& context);
 	void IRETURN(JVM& context);
 
 	void Unknown(JVM& context);
