@@ -117,6 +117,13 @@ void Opcodes::LLOAD(JVM &context) {
 	std::cout << "LLOAD " << (int)index << "\n";
 }
 
+void Opcodes::IADD(JVM &context) {
+	int32_t a = context.operand_stack().pop();
+	int32_t b = context.operand_stack().pop();
+	context.operand_stack().push(a + b);
+	std::cout << "a + b = " << context.operand_stack().peek() << "\n";
+}
+
 void Opcodes::LADD(JVM &context) {
 	int64_t a = context.operand_stack().pop_64();
 	int64_t b = context.operand_stack().pop_64();
@@ -221,6 +228,7 @@ std::map<uint8_t, OpcodeHandle> opcode_map = {
 	{0x1b, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ILOAD_1}},
 	{0x1c, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ILOAD_2}},
 
+	{0x60, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IADD}},
 	{0x61, OpcodeHandle{.no_parameters = 0, .function = Opcodes::LADD}},
 	{0x68, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IMUL}},
 

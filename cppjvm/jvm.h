@@ -40,6 +40,7 @@ namespace Opcodes {
 
 	void LLOAD(JVM& context);
 
+	void IADD(JVM& context);
 	void LADD(JVM& context);
 
 	void ILOAD_0(JVM& context);
