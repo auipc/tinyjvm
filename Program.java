@@ -17,6 +17,6 @@ class Program {
         long b = 6942042069420420l;
         long d = c + b;
         long e = d + 1l;
-		int[] lol = new int[50];
+		//int[] lol = new int[50];
     }
 }

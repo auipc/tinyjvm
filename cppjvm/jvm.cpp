@@ -69,6 +69,14 @@ void Opcodes::ICONST_5(JVM &context) {
 	context.operand_stack().push(5);
 }
 
+void Opcodes::LCONST_0(JVM &context) {
+	context.operand_stack().push_64(0L);
+}
+
+void Opcodes::LCONST_1(JVM &context) {
+	context.operand_stack().push_64(1L);
+}
+
 void Opcodes::ISTORE_0(JVM &context) {
 	context.istore(0, context.operand_stack().pop());
 }
@@ -190,6 +198,9 @@ std::map<uint8_t, OpcodeHandle> opcode_map = {
 	{0x06, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ICONST_3}},
 	{0x07, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ICONST_4}},
 	{0x08, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ICONST_5}},
+
+	{0x09, OpcodeHandle{.no_parameters = 0, .function = Opcodes::LCONST_0}},
+	{0x0a, OpcodeHandle{.no_parameters = 0, .function = Opcodes::LCONST_1}},
 
 	{0x10, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Byte, .function = Opcodes::BIPUSH}},
 

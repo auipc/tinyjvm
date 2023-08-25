@@ -27,6 +27,9 @@ namespace Opcodes {
 	void ICONST_4(JVM& context);
 	void ICONST_5(JVM& context);
 
+	void LCONST_0(JVM& context);
+	void LCONST_1(JVM& context);
+
 	void ISTORE_0(JVM& context);
 	void ISTORE_1(JVM& context);
 	void ISTORE_2(JVM& context);
