@@ -177,6 +177,24 @@ void Opcodes::LSTORE(JVM &context) {
 	context.lstore((uint8_t)index, context.operand_stack().pop_64());
 }
 
+void Opcodes::NEWARRAY(JVM &context) {
+	/* The correspondence between type codes and primitive types is specified by the following predicate:
+	 * primitiveArrayInfo(4,  0'Z, boolean, int).
+	 * primitiveArrayInfo(5,  0'C, char,    int).
+	 * primitiveArrayInfo(6,  0'F, float,   float).
+	 * primitiveArrayInfo(7,  0'D, double,  double).
+	 * primitiveArrayInfo(8,  0'B, byte,    int).
+	 * primitiveArrayInfo(9,  0'S, short,   int).
+	 * primitiveArrayInfo(10, 0'I, int,     int). 
+	 * primitiveArrayInfo(11, 0'J, long,    long).
+	 */
+	uint8_t primitive_index = (uint8_t)context.opcode_parameters.at(0).get()->get_fault_type<int>();
+	uint32_t array_size = context.operand_stack().pop();
+	std::cout << "primtiive_index " << (int)primitive_index << "\n";
+	std::cout << "array_size " << (int)array_size << "\n";
+	context.exit("TODO NEWARRAY", 1);
+}
+
 void Opcodes::Unknown(JVM& context) {
 	std::cout << "Unknown opcode\n";
 	std::cout << "Exiting...\n";
@@ -218,6 +236,7 @@ std::map<uint8_t, OpcodeHandle> opcode_map = {
 	{0x36, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Byte, .function = Opcodes::ISTORE}},
 	{0x37, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Byte, .function = Opcodes::LSTORE}},
 
+
 	{0x3b, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ISTORE_0}},
 	{0x3c, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ISTORE_1}},
 	{0x3d, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ISTORE_2}},
@@ -236,6 +255,8 @@ std::map<uint8_t, OpcodeHandle> opcode_map = {
 	{0xac, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IRETURN}},
 
 	{0xb8, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Short, .function = Opcodes::INVOKESTATIC}},
+
+	{0xbc, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Byte, .function = Opcodes::NEWARRAY}},
 };
 
 JVM::JVM(ClassLoader *classloader) : m_classloader(classloader) {

@@ -54,6 +54,8 @@ namespace Opcodes {
 	void RETURN(JVM& context);
 	void IRETURN(JVM& context);
 
+	void NEWARRAY(JVM& context);
+
 	void Unknown(JVM& context);
 };
 
