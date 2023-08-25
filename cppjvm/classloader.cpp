@@ -28,13 +28,7 @@ ClassFileStream::ClassFileStream(const char *filename) : m_filename(filename) {
 
 	m_buffer = new char[m_length];
 	memset(m_buffer, 0, m_length);
-	printf("lol 0x%x\n", m_buffer);
 	fread(m_buffer, m_length, 1, m_file);
-	for (int i = 0; i < m_length; i++) {
-		printf("0x%x ", m_buffer[i] & 0xFF);
-	}
-	printf("\n");
-	// fclose(m_file);
 }
 
 ClassFileStream::~ClassFileStream() {
@@ -82,7 +76,6 @@ void ClassFileStream::read_length(void *buffer, size_t length) {
 
 uint32_t ClassFileStream::read_u4() {
 	uint32_t u4;
-	std::cout << "pos " << m_position << "\n";
 	std::vector<char> data = consume(4);
 	memcpy(&u4, data.data(), 4);
 	u4 = htonl(u4);
@@ -110,7 +103,6 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 	for (int i = 0; i < count; i++) {
 		uint16_t attribute_name_idx = m_stream->read<uint16_t>();
 		uint32_t attribute_length = m_stream->read<uint32_t>();
-		std::cout << "idx m " << attribute_name_idx - 1 << "\n";
 		auto cp_entry = constant_pool.at(attribute_name_idx - 1);
 
 		// Skip over all entries not of type Utf8
@@ -120,20 +112,14 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 		// m_stream->read_length(reinterpret_cast<void*>(info),
 		// attribute_length);
 		if (strncmp(cp_entry.utf8, "Code", cp_entry.utf8_length) == 0) {
-			printf("Code attribute found\n");
 			uint16_t max_stack = m_stream->read<uint16_t>();
 			uint16_t max_locals = m_stream->read<uint16_t>();
 			uint32_t code_length = m_stream->read<uint32_t>();
 			uint8_t *code = new uint8_t[code_length];
 			m_stream->read_length(reinterpret_cast<void *>(code), code_length);
-			for (int o = 0; o < code_length; o++) {
-				printf("%x ", code[o]);
-			}
-			printf("\n");
 
 			methods[std::string(utf8, utf8_length)] =
 				Method{max_stack, max_locals, code_length, code};
-			std::cout << "lel: " << std::string(utf8, utf8_length) << "\n";
 
 			uint16_t exception_table_length = m_stream->read<uint16_t>();
 			if (exception_table_length > 0) {
@@ -184,21 +170,16 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 					// read verification_type_info
 					for (int i = 0; i < number_of_locals; i++) {
 						uint8_t tag = m_stream->read<uint8_t>();
-						std::cout << "tag: " << (int)tag << "\n";
 						switch (tag) {
 						case 1:
-							std::cout << "integer\n";
 							break;
 						case 4:
-							std::cout << "long\n";
 							break;
 						case 7: {
 							uint16_t cpool_index = m_stream->read<uint16_t>();
-							std::cout << "cpool_index: " << cpool_index << "\n";
 						} break;
 						case 8: {
 							uint16_t offset = m_stream->read<uint16_t>();
-							std::cout << "offset: " << offset << "\n";
 						} break;
 						default:
 							throw std::runtime_error("unknown tag");
@@ -211,13 +192,10 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 					// read verification_type_info
 					for (int i = 0; i < number_of_locals; i++) {
 						uint8_t tag = m_stream->read<uint8_t>();
-						std::cout << "tag: " << (int)tag << "\n";
 						if (tag == 7) {
 							uint16_t cpool_index = m_stream->read<uint16_t>();
-							std::cout << "cpool_index: " << cpool_index << "\n";
 						} else if (tag == 8) {
 							uint16_t offset = m_stream->read<uint16_t>();
-							std::cout << "offset: " << offset << "\n";
 						} else if (tag == 6) {
 							throw std::runtime_error("Unimplemented tag");
 						} else if (tag == 4) {
@@ -242,10 +220,8 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 				}
 			}
 		} else {
-			printf("str: %.*s\n", cp_entry.utf8_length, cp_entry.utf8);
 			throw std::runtime_error("Unknown attribute");
 		}
-		printf("str: %.*s\n", cp_entry.utf8_length, cp_entry.utf8);
 	}
 }
 
@@ -260,8 +236,6 @@ void ClassLoader::load_class() {
 
 	uint16_t minor = m_stream->read<uint16_t>();
 	uint16_t major = m_stream->read<uint16_t>();
-	std::cout << "m " << minor << "\n";
-	std::cout << "m " << major << "\n";
 
 	uint16_t constant_pool_size = m_stream->read<uint16_t>();
 	for (int i = 0; i < constant_pool_size - 1; i++) {
@@ -343,7 +317,6 @@ void ClassLoader::load_class() {
 	}
 
 	uint16_t fields_count = m_stream->read<uint16_t>();
-	std::cout << "fields_count: " << fields_count << "\n";
 	if (fields_count > 0) {
 		for (int i = 0; i < fields_count; i++) {
 			uint16_t access_flags = m_stream->read<uint16_t>();
@@ -363,7 +336,6 @@ void ClassLoader::load_class() {
 		for (int i = 0; i < methods_count; i++) {
 			uint16_t access_flags = m_stream->read<uint16_t>();
 			uint16_t name_index = m_stream->read<uint16_t>();
-			std::cout << "name_index " << name_index << "\n";
 			auto cp_entry = constant_pool.at(name_index - 1);
 			uint16_t descriptor_index = m_stream->read<uint16_t>();
 			uint16_t attributes_count = m_stream->read<uint16_t>();
@@ -382,8 +354,6 @@ void ClassLoader::load_class() {
 			if (strncmp(name.utf8, m_class_name.c_str(), name.utf8_length) ==
 				0) {
 				methods["main"].class_index = i + 1;
-				std::cout << "main class index: " << methods["main"].class_index
-						  << "\n";
 			}
 			classes[i] = std::string(name.utf8, name.utf8_length);
 		}
@@ -396,11 +366,6 @@ void ClassLoader::load_class() {
 			methods[name_str.utf8].class_index = entry.class_index;
 		}
 	}
-
-	printf("\033[0;31mFIXME: buggy stack map table parsing so we can't read "
-		   "attribute count\033[0m\n");
-	// uint16_t attributes_count = m_stream->read<uint16_t>();
-	// read_attributes("", 0, attributes_count);
 
 	delete m_stream;
 }

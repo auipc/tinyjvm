@@ -8,8 +8,48 @@
 #include <vector>
 #include <cassert>
 #include <memory>
+#include <cstring>
 
 class ClassLoader;
+class JVM;
+
+namespace Opcodes {
+	void NOP(JVM& context);
+	void INVOKESTATIC(JVM& context);
+
+	void BIPUSH(JVM& context);
+
+	void ICONST_M1(JVM& context);
+	void ICONST_0(JVM& context);
+	void ICONST_1(JVM& context);
+	void ICONST_2(JVM& context);
+	void ICONST_3(JVM& context);
+	void ICONST_4(JVM& context);
+	void ICONST_5(JVM& context);
+
+	void ISTORE_0(JVM& context);
+	void ISTORE_1(JVM& context);
+	void ISTORE_2(JVM& context);
+	void ISTORE_3(JVM& context);
+
+	void LSTORE(JVM& context);
+
+	void LLOAD(JVM& context);
+
+	void LADD(JVM& context);
+
+	void ILOAD_0(JVM& context);
+	void ILOAD_1(JVM& context);
+	void ILOAD_2(JVM& context);
+
+	void IMUL(JVM& context);
+
+	void LDC2_W(JVM& context);
+
+	void IRETURN(JVM& context);
+
+	void Unknown(JVM& context);
+};
 
 class Variable {
   public:
@@ -19,6 +59,7 @@ class Variable {
 		Long = 2,
 		Double = 3,
 		ObjectReference = 4,
+		ArrayRef = 5
 	};
 	Variable() {
 		m_data = nullptr;
@@ -46,7 +87,9 @@ class Variable {
 			throw std::runtime_error("Invalid type");
 		if (m_tag == Tags::Double != std::is_same<T, double>::value)
 			throw std::runtime_error("Invalid type");
-		if (m_tag == Tags::ObjectReference != std::is_same<T, size_t>::value)
+		if (m_tag == Tags::ObjectReference != std::is_same<T, uintptr_t>::value)
+			throw std::runtime_error("Invalid type");
+		if (m_tag == Tags::ArrayRef != std::is_same<T, uintptr_t>::value)
 			throw std::runtime_error("Invalid type");
 
 		return *(T *)m_data;
@@ -59,9 +102,11 @@ class Variable {
 			if (new_tag != m_tag) {
 				delete[] m_data;
 				m_data = new uint8_t[sizeof(T)];
+				std::memset(m_data, 0, sizeof(uint8_t) * sizeof(T));
 			}
 		} else {
 			m_data = new uint8_t[sizeof(T)];
+			std::memset(m_data, 0, sizeof(uint8_t) * sizeof(T));
 			m_is_null = false;
 		}
 
@@ -90,7 +135,6 @@ class JVM {
 
 	int exitcode() { return m_exitcode; }
 
-  private:
 	void lstore(uint16_t index, int64_t value);
 	void istore(uint16_t index, int32_t value);
 	void jump_to(int32_t offset);
@@ -175,6 +219,11 @@ class JVM {
 		return m_current_stack_frame->operating_bytecode.max_locals-1;
 	}
 
+	inline ClassLoader* classloader() { return m_classloader; }
+	inline void set_stack_frame(StackFrame* frame) { m_current_stack_frame = frame; }
+
+	std::vector<std::unique_ptr<Variable>> opcode_parameters;
+  private:
 	bool m_exit = false;
 	int m_exitcode = 0;
 	std::vector<StackFrame> m_stack;

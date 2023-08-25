@@ -4,6 +4,210 @@
 #include <cppjvm/jvm.h>
 #include <iostream>
 
+void Opcodes::NOP(JVM& context) {
+	std::cout << "opcode\n";
+}
+
+void Opcodes::INVOKESTATIC(JVM& context) {
+	int index = context.opcode_parameters.at(0).get()->get_fault_type<int>();
+
+	auto cp_entry = context.classloader()->get_const_pool_entry(index);
+	if (cp_entry.tag != ConstPoolTag::MethodRef) {
+		std::cout << "Expected CONSTANT_Methodref, got " << cp_entry.tag
+				  << "\n";
+		context.exit("Bad constant pool entry");
+	}
+
+	auto name_and_type =
+		context.classloader()->get_const_pool_entry(cp_entry.name_and_type_index);
+
+	if (name_and_type.tag != ConstPoolTag::NameAndType) {
+		std::cout << "Expected CONSTANT_NameAndType, got "
+				  << name_and_type.tag << "\n";
+		context.exit("Bad constant pool entry");
+	}
+
+	// FIXME utf8 isn't null terminated. sort of a big issue
+	auto name_str =
+		context.classloader()->get_const_pool_entry(name_and_type.name_index);
+	std::cout << name_str.utf8 << "\n";
+
+	// ugly
+	context.set_stack_frame(&JVM::StackFrame::create(&context.stack_frame()));
+	// TODO check if the method matches the type signature
+	// otherwise the stack will be corrupted and we won't find the function
+	// we're looking for.
+	context.stack_frame().set_operating_bytecode(
+		context.classloader()->methods[std::string(name_str.utf8)]);
+}
+
+void Opcodes::ICONST_M1(JVM &context) {
+	context.operand_stack().push(-1);
+}
+
+void Opcodes::ICONST_0(JVM &context) {
+	context.operand_stack().push(0);
+}
+
+void Opcodes::ICONST_1(JVM &context) {
+	context.operand_stack().push(1);
+}
+
+void Opcodes::ICONST_2(JVM &context) {
+	context.operand_stack().push(2);
+}
+
+void Opcodes::ICONST_3(JVM &context) {
+	context.operand_stack().push(3);
+}
+
+void Opcodes::ICONST_4(JVM &context) {
+	context.operand_stack().push(4);
+}
+
+void Opcodes::ICONST_5(JVM &context) {
+	context.operand_stack().push(5);
+}
+
+void Opcodes::ISTORE_0(JVM &context) {
+	context.istore(0, context.operand_stack().pop());
+}
+
+void Opcodes::ISTORE_1(JVM &context) {
+	context.istore(1, context.operand_stack().pop());
+}
+
+void Opcodes::ISTORE_2(JVM &context) {
+	context.istore(2, context.operand_stack().pop());
+}
+
+void Opcodes::ISTORE_3(JVM &context) {
+	context.istore(3, context.operand_stack().pop());
+}
+
+void Opcodes::ILOAD_0(JVM &context) {
+	context.operand_stack().push(
+		context.stack_frame().local_variables[0]->get_fault_type<int>());
+}
+
+void Opcodes::ILOAD_1(JVM &context) {
+	context.operand_stack().push(
+		context.stack_frame().local_variables[1]->get_fault_type<int>());
+}
+
+void Opcodes::ILOAD_2(JVM &context) {
+	context.operand_stack().push(
+		context.stack_frame().local_variables[2]->get_fault_type<int>());
+}
+
+void Opcodes::LLOAD(JVM &context) {
+	uint8_t index = context.opcode_parameters.at(0).get()->get_fault_type<int>();
+	std::cout << (int)index << "\n";
+	// FIXME bounds check
+	context.operand_stack().push_64(
+		context.stack_frame().local_variables[(uint8_t)index]->get_fault_type<int64_t>());
+	std::cout << "LLOAD " << (int)index << "\n";
+}
+
+void Opcodes::LADD(JVM &context) {
+	int64_t a = context.operand_stack().pop_64();
+	int64_t b = context.operand_stack().pop_64();
+	std::cout << "a: " << a << " b: " << b << "\n";
+	std::cout << "a + b = " << a + b << "\n";
+	context.operand_stack().push_64(a + b);
+	std::cout << "a + b = " << context.operand_stack().peek_64() << "\n";
+}
+
+void Opcodes::LDC2_W(JVM &context) {
+	int index = context.opcode_parameters.at(0).get()->get_fault_type<int>();
+	auto cp_entry = context.classloader()->get_const_pool_entry(index);
+	if (cp_entry.tag != ConstPoolTag::Long) {
+		std::cout << "Expected CONSTANT_Long, got " << cp_entry.tag << "\n";
+		context.exit("Bad constant pool entry");
+	}
+	std::cout << "Pushing long " << cp_entry.numbers.long_integer << "\n";
+	context.operand_stack().push_64(cp_entry.numbers.long_integer);
+	std::cout << "Long pushed " << context.operand_stack().peek_64() << "\n";
+}
+
+void Opcodes::IRETURN(JVM &context) {
+	auto parent = context.stack_frame().parent;
+	parent->operand_stack.push(context.operand_stack().pop());
+	context.return_from_method();
+}
+
+void Opcodes::BIPUSH(JVM &context) {
+	int value = context.opcode_parameters.at(0).get()->get_fault_type<int>();
+	context.operand_stack().push((uint8_t)value);
+}
+
+void Opcodes::IMUL(JVM &context) {
+	int32_t a = context.operand_stack().pop();
+	int32_t b = context.operand_stack().pop();
+	context.operand_stack().push(a * b);
+	std::cout << "a * b = " << context.operand_stack().peek() << "\n";
+}
+
+void Opcodes::LSTORE(JVM &context) {
+	int index = context.opcode_parameters.at(0).get()->get_fault_type<int>();
+	context.lstore((uint8_t)index, context.operand_stack().pop_64());
+}
+
+void Opcodes::Unknown(JVM& context) {
+	std::cout << "Unknown opcode\n";
+	std::cout << "Exiting...\n";
+	context.exit("Bad opcode", 1);
+}
+
+typedef void (*OpcodeFunc)(JVM& context);
+struct OpcodeHandle {
+	uint32_t no_parameters;
+	enum {
+		Byte,
+		Short,
+		Int,
+		Long
+	} parameter_type;
+	OpcodeFunc function;
+};
+
+std::map<uint8_t, OpcodeHandle> opcode_map = {
+	{0x00, OpcodeHandle{.no_parameters = 0, .function = Opcodes::NOP}},
+	{0x02, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ICONST_M1}},
+
+	{0x03, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ICONST_0}},
+	{0x04, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ICONST_1}},
+	{0x05, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ICONST_2}},
+	{0x06, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ICONST_3}},
+	{0x07, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ICONST_4}},
+	{0x08, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ICONST_5}},
+
+	{0x10, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Byte, .function = Opcodes::BIPUSH}},
+
+	{0x14, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Short, .function = Opcodes::LDC2_W}},
+
+	{0x16, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Byte, .function = Opcodes::LLOAD}},
+
+	{0x37, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Byte, .function = Opcodes::LSTORE}},
+
+	{0x3b, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ISTORE_0}},
+	{0x3c, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ISTORE_1}},
+	{0x3d, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ISTORE_2}},
+	{0x3e, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ISTORE_3}},
+
+
+	{0x1a, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ILOAD_0}},
+	{0x1b, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ILOAD_1}},
+	{0x1c, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ILOAD_2}},
+
+	{0x61, OpcodeHandle{.no_parameters = 0, .function = Opcodes::LADD}},
+	{0x68, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IMUL}},
+
+	{0xac, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IRETURN}},
+
+	{0xb8, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Short, .function = Opcodes::INVOKESTATIC}},
+};
+
 JVM::JVM(ClassLoader *classloader) : m_classloader(classloader) {
 	// auto root_stack_frame = StackFrame();
 	// m_stack.push_back(root_stack_frame);
@@ -20,14 +224,7 @@ JVM::JVM(ClassLoader *classloader) : m_classloader(classloader) {
 void JVM::run() {
 	stack_frame().set_operating_bytecode(
 		m_classloader->methods[std::string("main")]);
-	for (auto &pair : m_classloader->methods) {
-		std::cout << "lol\n";
-		std::cout << pair.first << "\n";
-		std::cout << pair.second.code_length << "\n";
-		std::cout << "lol\n";
-	}
-	std::cout << stack_frame().operating_bytecode.code_length << "\n";
-	std::cout << get_program_counter() << "\n";
+
 	do {
 		uint8_t opcode =
 			bytecode_fetch_byte(stack_frame().operating_bytecode.code,
@@ -35,8 +232,46 @@ void JVM::run() {
 								get_program_counter());
 		incr_program_counter();
 		std::cout << "opcode: " << std::hex << (int)opcode << std::dec << "\n";
-		interpret_opcode(opcode);
-		if ((get_program_counter()) >
+		if (opcode_map.contains(opcode)) {
+			for (int i = 0; i < opcode_map[opcode].no_parameters; i++) {
+				switch (opcode_map[opcode].parameter_type) {
+					case OpcodeHandle::Byte: {
+						uint8_t byte_param = bytecode_fetch_byte(stack_frame().operating_bytecode.code, 
+																 stack_frame().operating_bytecode.code_length,
+																 get_program_counter());
+						incr_program_counter();
+
+						auto var = std::make_unique<Variable>();
+						var.get()->set(Variable::Tags::Integer, byte_param);
+						opcode_parameters.push_back(std::move(var));
+					} break;
+					case OpcodeHandle::Short: {
+						uint16_t short_param = bytecode_fetch_short(stack_frame().operating_bytecode.code, 
+																 stack_frame().operating_bytecode.code_length,
+																 get_program_counter());
+						add_program_counter(2);
+
+						auto var = std::make_unique<Variable>();
+
+						// Nothing like a bit of widening
+						var.get()->set(Variable::Tags::Integer, short_param);
+						opcode_parameters.push_back(std::move(var));
+					} break;
+					default:
+						exit("Bad opcode parameter", 1);
+						break;
+				}
+			}
+
+			opcode_map.at(opcode).function(*this);
+		} else {
+			Opcodes::Unknown(*this);
+		}
+
+		opcode_parameters.clear();
+
+		//interpret_opcode(opcode);
+		if ((get_program_counter()+1) >
 			stack_frame().operating_bytecode.code_length)
 			exit("End of bytecode", 1);
 	} while (!m_exit);
@@ -96,6 +331,7 @@ void JVM::return_from_method() {
 	delete previous;
 }
 
+/*
 void JVM::interpret_opcode(uint8_t opcode) {
 	switch (opcode) {
 	// NOP
@@ -150,11 +386,6 @@ void JVM::interpret_opcode(uint8_t opcode) {
 								stack_frame().operating_bytecode.code_length,
 								get_program_counter());
 		incr_program_counter();
-		/*if (index > 10) {
-			throw std::runtime_error("Variable index out of bounds");
-		}
-
-		stack_frame().local_variables[index] = operand_stack().pop();*/
 		istore(index, operand_stack().pop());
 		break;
 	}
@@ -423,6 +654,29 @@ void JVM::interpret_opcode(uint8_t opcode) {
 
 		break;
 	}
+	// NEWARRAY
+	case 0xbc:
+	*/
+		/* The correspondence between type codes and primitive types is specified by the following predicate:
+		 * primitiveArrayInfo(4,  0'Z, boolean, int).
+		 * primitiveArrayInfo(5,  0'C, char,    int).
+		 * primitiveArrayInfo(6,  0'F, float,   float).
+		 * primitiveArrayInfo(7,  0'D, double,  double).
+		 * primitiveArrayInfo(8,  0'B, byte,    int).
+		 * primitiveArrayInfo(9,  0'S, short,   int).
+		 * primitiveArrayInfo(10, 0'I, int,     int). 
+		 * primitiveArrayInfo(11, 0'J, long,    long).
+		 */
+		/*	   {
+		uint8_t primitive_index = bytecode_fetch_byte(stack_frame().operating_bytecode.code,
+								 stack_frame().operating_bytecode.code_length,
+								 get_program_counter());
+		add_program_counter(1);
+
+		std::cout << "primitive_index " << (int)primitive_index << "\n";
+		assert(false);
+			   }
+		break;
 	// LDC2_W
 	case 0x14: {
 		uint16_t index =
@@ -447,4 +701,4 @@ void JVM::interpret_opcode(uint8_t opcode) {
 		exit("Bad opcode", 1);
 		break;
 	}
-}
+}*/
