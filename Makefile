@@ -2,7 +2,8 @@ CXX=clang++
 OBJS = cppjvm/classloader.o \
 	   cppjvm/jvm.o \
 	   cppjvm/main.o \
-	   cppjvm/stack.o
+	   cppjvm/stack.o \
+	   cppjvm/opcodes.o
 
 CXXFLAGS=-I. -g -fsanitize=undefined -MMD -MP -std=c++20
 
