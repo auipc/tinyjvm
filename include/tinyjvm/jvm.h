@@ -1,7 +1,7 @@
 #pragma once
 // Hate using the C++ STL
-#include <cppjvm/classloader.h>
-#include <cppjvm/stack.h>
+#include <tinyjvm/classloader.h>
+#include <tinyjvm/stack.h>
 #include <cstdint>
 #include <iostream>
 #include <stdio.h>

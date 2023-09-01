@@ -1,5 +1,5 @@
-#include <cppjvm/classloader.h>
-#include <cppjvm/jvm.h>
+#include <tinyjvm/classloader.h>
+#include <tinyjvm/jvm.h>
 
 int main(int argc, char *argv[]) {
 	if (argc < 3) {

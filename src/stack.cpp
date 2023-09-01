@@ -1,5 +1,5 @@
 #include <cassert>
-#include <cppjvm/stack.h>
+#include <tinyjvm/stack.h>
 #include <iostream>
 
 // Shamelessly stolen from stackoverflow

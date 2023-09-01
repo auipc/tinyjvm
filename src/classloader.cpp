@@ -1,8 +1,8 @@
 #include <algorithm>
 #include <arpa/inet.h>
 #include <array>
-#include <cppjvm/classloader.h>
-#include <cppjvm/exceptions.h>
+#include <tinyjvm/classloader.h>
+#include <tinyjvm/exceptions.h>
 #include <cstring>
 #include <exception>
 #include <iostream>

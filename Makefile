@@ -1,23 +1,23 @@
 CXX=clang++
-OBJS = cppjvm/classloader.o \
-	   cppjvm/jvm.o \
-	   cppjvm/main.o \
-	   cppjvm/stack.o \
-	   cppjvm/opcodes.o
+OBJS = src/classloader.o \
+	   src/jvm.o \
+	   src/main.o \
+	   src/stack.o \
+	   src/opcodes.o
 
-CXXFLAGS=-I. -g -fsanitize=undefined -MMD -MP -std=c++20
+CXXFLAGS=-Iinclude -g -fsanitize=undefined -MMD -MP -std=c++20
 
-CPPJVM=jvm
+TINYJVM=jvm
 
-all: $(CPPJVM)
+all: $(TINYJVM)
 
-run: $(CPPJVM)
-	./$(CPPJVM) $(PROGRAM_ARGS)
+run: $(TINYJVM)
+	./$(TINYJVM) $(PROGRAM_ARGS)
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(CPPJVM): $(OBJS) 
+$(TINYJVM): $(OBJS) 
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) 
 
 -include $(OBJS:%.o=%.d)

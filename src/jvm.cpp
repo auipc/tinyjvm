@@ -1,8 +1,8 @@
 #include <arpa/inet.h>
 #include <cassert>
-#include <cppjvm/classloader.h>
-#include <cppjvm/opcodes.h>
-#include <cppjvm/jvm.h>
+#include <tinyjvm/classloader.h>
+#include <tinyjvm/opcodes.h>
+#include <tinyjvm/jvm.h>
 #include <iostream>
 
 JVM::JVM(ClassLoader *classloader) : m_classloader(classloader) {

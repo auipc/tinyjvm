@@ -1,5 +1,5 @@
-#include <cppjvm/opcodes.h>
-#include <cppjvm/jvm.h>
+#include <tinyjvm/opcodes.h>
+#include <tinyjvm/jvm.h>
 
 void Opcodes::NOP(JVM& context) {
 	std::cout << "opcode\n";
