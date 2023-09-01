@@ -48,6 +48,7 @@ namespace Opcodes {
 	void ILOAD_2(JVM& context);
 
 	void IMUL(JVM& context);
+	void IDIV(JVM& context);
 
 	void LDC2_W(JVM& context);
 
