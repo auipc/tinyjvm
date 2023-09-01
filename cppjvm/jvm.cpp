@@ -174,6 +174,12 @@ void Opcodes::IDIV(JVM &context) {
 	std::cout << "a / b = " << context.operand_stack().peek() << "\n";
 }
 
+void Opcodes::LMUL(JVM &context) {
+	int64_t a = context.operand_stack().pop_64();
+	int64_t b = context.operand_stack().pop_64();
+	context.operand_stack().push_64(a * b);
+}
+
 void Opcodes::ISTORE(JVM &context) {
 	int index = context.opcode_parameters.at(0).get()->get_fault_type<int>();
 	context.istore((uint8_t)index, context.operand_stack().pop());
@@ -257,6 +263,7 @@ std::map<uint8_t, OpcodeHandle> opcode_map = {
 	{0x60, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IADD}},
 	{0x61, OpcodeHandle{.no_parameters = 0, .function = Opcodes::LADD}},
 	{0x68, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IMUL}},
+	{0x69, OpcodeHandle{.no_parameters = 0, .function = Opcodes::LMUL}},
 	{0x6c, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IDIV}},
 
 	{0xb1, OpcodeHandle{.no_parameters = 0, .function = Opcodes::RETURN}},

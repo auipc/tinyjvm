@@ -42,6 +42,7 @@ namespace Opcodes {
 
 	void IADD(JVM& context);
 	void LADD(JVM& context);
+	void LMUL(JVM& context);
 
 	void ILOAD_0(JVM& context);
 	void ILOAD_1(JVM& context);
