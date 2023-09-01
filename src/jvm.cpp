@@ -16,7 +16,7 @@ JVM::JVM(ClassLoader *classloader) : m_classloader(classloader) {
 
 // TODO allocate memory for attributes of the class and figure out how to
 // resolve dependencies in a clean way so we can call Object's initializer in
-// case there's implementation specific quirks in the standard java lib Maybe we
+// case there's implementation specific quirks in the standard java lib. Maybe we
 // should write our own :^)
 void JVM::run() {
 	stack_frame().set_operating_bytecode(
