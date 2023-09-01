@@ -24,18 +24,14 @@ void JVM::run() {
 
 	do {
 		uint8_t opcode =
-			bytecode_fetch_byte(stack_frame().operating_bytecode.code,
-								stack_frame().operating_bytecode.code_length,
-								get_program_counter());
+			fetch_byte(get_program_counter());
 		incr_program_counter();
 		std::cout << "opcode: " << std::hex << (int)opcode << std::dec << "\n";
 		if (Opcodes::opcode_map.contains(opcode)) {
 			for (int i = 0; i < Opcodes::opcode_map[opcode].no_parameters; i++) {
 				switch (Opcodes::opcode_map[opcode].parameter_type) {
 					case OpcodeHandle::Byte: {
-						uint8_t byte_param = bytecode_fetch_byte(stack_frame().operating_bytecode.code, 
-																 stack_frame().operating_bytecode.code_length,
-																 get_program_counter());
+						uint8_t byte_param = fetch_byte(get_program_counter());
 						incr_program_counter();
 
 						auto var = std::make_unique<Variable>();
@@ -43,9 +39,7 @@ void JVM::run() {
 						opcode_parameters.push_back(std::move(var));
 					} break;
 					case OpcodeHandle::Short: {
-						uint16_t short_param = bytecode_fetch_short(stack_frame().operating_bytecode.code, 
-																 stack_frame().operating_bytecode.code_length,
-																 get_program_counter());
+						uint16_t short_param = fetch_short(get_program_counter());
 						add_program_counter(2);
 
 						auto var = std::make_unique<Variable>();
@@ -74,24 +68,24 @@ void JVM::run() {
 	} while (!m_exit);
 }
 
-uint8_t JVM::bytecode_fetch_byte(uint8_t *code, size_t bytecode_size,
-								 size_t ptr) {
-	assert(ptr < bytecode_size);
-	return code[ptr];
+uint8_t JVM::fetch_byte(uint32_t pos) {
+	auto code = stack_frame().operating_bytecode;
+	assert(pos < code.code_length);
+	return code.code[pos];
 }
 
-int16_t JVM::bytecode_fetch_short(uint8_t *code, size_t bytecode_size,
-								  size_t ptr) {
-	assert(ptr < bytecode_size);
-	int16_t value = code[ptr] << 8 | code[ptr + 1];
+int16_t JVM::fetch_short(uint32_t pos) {
+	auto code = stack_frame().operating_bytecode;
+	assert(pos < code.code_length);
+	int16_t value = code.code[pos] << 8 | code.code[pos + 1];
 	return value;
 }
 
-int32_t JVM::bytecode_fetch_int(uint8_t *code, size_t bytecode_size,
-								size_t ptr) {
-	assert(ptr < bytecode_size);
-	int32_t value = code[ptr] << 24 | code[ptr + 1] << 16 | code[ptr + 2] << 8 |
-					code[ptr + 3];
+int32_t JVM::fetch_int(uint32_t pos) {
+	auto code = stack_frame().operating_bytecode;
+	assert(pos < code.code_length);
+	int32_t value = code.code[pos] << 24 | code.code[pos + 1] << 16 | code.code[pos + 2] << 8 |
+					code.code[pos + 3];
 	return value;
 }
 

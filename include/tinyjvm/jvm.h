@@ -124,13 +124,7 @@ class JVM {
 		static StackFrame& create(StackFrame *parent) {
 			StackFrame* stack_frame = new StackFrame();
 			stack_frame->parent = parent;
-			// Add 10 empty local variables
-			//for (int i = 0; i <= 10; i++)
-			//	stack_frame->local_variables.push_back(0);
 
-			/*if (parent != nullptr) {
-				parent->operand_stack.push((uint64_t)&stack_frame);
-			}*/
 			return *stack_frame;
 		}
 
@@ -152,12 +146,9 @@ class JVM {
 		return m_current_stack_frame->operand_stack;
 	}
 
-	uint8_t bytecode_fetch_byte(uint8_t *code, size_t bytecode_size,
-								size_t ptr);
-	int16_t bytecode_fetch_short(uint8_t *code, size_t bytecode_size,
-								 size_t ptr);
-	int32_t bytecode_fetch_int(uint8_t *code, size_t bytecode_size,
-								  size_t ptr);
+	uint8_t fetch_byte(uint32_t pos);
+	int16_t fetch_short(uint32_t pos);
+	int32_t fetch_int(uint32_t pos);
 
 	void interpret_opcode(uint8_t opcode);
 	inline uint32_t incr_program_counter() {
