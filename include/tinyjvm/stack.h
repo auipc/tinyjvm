@@ -3,6 +3,10 @@
 #include <cstdint>
 #include <vector>
 
+class StackUnderflowException : public std::exception {
+	const char *what() { return "Stack Underflow"; }
+};
+
 class Stack {
   public:
 	// FIXME replace this with a template later
@@ -16,7 +20,7 @@ class Stack {
 	int32_t peek();
 	int64_t peek_64();
 	inline size_t size() { return m_stack.size(); }
+
   private:
 	std::vector<int32_t> m_stack;
-
 };

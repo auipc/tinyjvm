@@ -1,6 +1,6 @@
 #include <cassert>
-#include <tinyjvm/stack.h>
 #include <iostream>
+#include <tinyjvm/stack.h>
 
 // Shamelessly stolen from stackoverflow
 // Why doesn't LIBC have this though
@@ -28,7 +28,7 @@ void Stack::push_64(int64_t v) {
 // FIXME raise error when we try to access stuff from an empty stack
 int32_t Stack::pop() {
 	if (!m_stack.size())
-		throw std::runtime_error("Stack is empty");
+		throw StackUnderflowException();
 	int32_t v = ntohl(m_stack.back());
 	m_stack.pop_back();
 	return v;
@@ -36,7 +36,7 @@ int32_t Stack::pop() {
 
 int64_t Stack::pop_64() {
 	if (m_stack.size() < 2)
-		throw std::runtime_error("Stack is empty");
+		throw StackUnderflowException();
 
 	// HACK
 	int64_t v = peek_64();
@@ -47,14 +47,14 @@ int64_t Stack::pop_64() {
 
 int32_t Stack::peek() {
 	if (!m_stack.size())
-		throw std::runtime_error("Stack is empty");
+		throw StackUnderflowException();
 	int32_t v = ntohl(m_stack.back());
 	return v;
 }
 
 int64_t Stack::peek_64() {
 	if (m_stack.size() < 2)
-		throw std::runtime_error("Stack is empty");
+		throw StackUnderflowException();
 	// FIXME this is probably endianess dependant
 	int64_t v = ntohl(m_stack.at(m_stack.size() - 2));
 	v = (v << 32) | ntohl(m_stack.back());
