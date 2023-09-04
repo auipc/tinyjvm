@@ -1,12 +1,12 @@
 #include <algorithm>
 #include <arpa/inet.h>
 #include <array>
-#include <tinyjvm/classloader.h>
-#include <tinyjvm/exceptions.h>
 #include <cstring>
 #include <exception>
 #include <iostream>
 #include <stdexcept>
+#include <tinyjvm/classloader.h>
+#include <tinyjvm/exceptions.h>
 
 ClassFileStream::ClassFileStream(const char *filename) : m_filename(filename) {
 	// I get le unix mindset is not having bloat
@@ -123,7 +123,7 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 
 			uint16_t exception_table_length = m_stream->read<uint16_t>();
 			if (exception_table_length > 0) {
-				throw std::runtime_error(
+				throw ClassParseException(
 					"exception_table_length > 0. we don't know how to parse "
 					"exception_table_length!");
 			}
@@ -147,21 +147,21 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 				uint8_t frame_type = m_stream->read<uint8_t>();
 				if (frame_type >= 0 && frame_type <= 63) {
 					// same_frame
-					throw std::runtime_error("same_frame not implemented");
+					throw ClassParseException("same_frame not implemented");
 				} else if (frame_type >= 64 && frame_type <= 127) {
 					// same_locals_1_stack_item_frame
-					throw std::runtime_error(
+					throw ClassParseException(
 						"same_locals_1_stack_item_frame not implemented");
 				} else if (frame_type == 247) {
 					// same_locals_1_stack_item_frame_extended
-					throw std::runtime_error("same_locals_1_stack_item_frame_"
-											 "extended not implemented");
+					throw ClassParseException("same_locals_1_stack_item_frame_"
+											  "extended not implemented");
 				} else if (frame_type >= 248 && frame_type <= 250) {
 					// chop_frame
 					uint16_t offset_delta = m_stream->read<uint16_t>();
 				} else if (frame_type == 251) {
 					// same_frame_extended
-					throw std::runtime_error(
+					throw ClassParseException(
 						"same_frame_extended not implemented");
 				} else if (frame_type >= 252 && frame_type <= 254) {
 					// append_frame
@@ -182,7 +182,7 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 							uint16_t offset = m_stream->read<uint16_t>();
 						} break;
 						default:
-							throw std::runtime_error("unknown tag");
+							throw ClassParseException("unknown tag");
 						}
 					}
 				} else if (frame_type == 255) {
@@ -197,30 +197,30 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 						} else if (tag == 8) {
 							uint16_t offset = m_stream->read<uint16_t>();
 						} else if (tag == 6) {
-							throw std::runtime_error("Unimplemented tag");
+							throw ClassParseException("Unimplemented tag");
 						} else if (tag == 4) {
-							// throw std::runtime_error("Unimplemented tag");
+							// throw ClassParseException("Unimplemented tag");
 						} else if (tag == 3) {
-							throw std::runtime_error("Unimplemented tag");
+							throw ClassParseException("Unimplemented tag");
 						} else if (tag == 2) {
-							throw std::runtime_error("Unimplemented tag");
+							throw ClassParseException("Unimplemented tag");
 						} else if (tag == 1) {
-							// throw std::runtime_error("Unimplemented tag");
+							// throw ClassParseException("Unimplemented tag");
 						} else if (tag == 0) {
-							throw std::runtime_error("Unimplemented tag");
+							throw ClassParseException("Unimplemented tag");
 						} else if (tag == 5) {
-							throw std::runtime_error("Unimplemented tag");
+							throw ClassParseException("Unimplemented tag");
 						}
 					}
 
 					uint16_t number_of_stack_items = m_stream->read<uint16_t>();
 					for (int i = 0; i < number_of_stack_items; i++) {
-						throw std::runtime_error("Unknown tag");
+						throw ClassParseException("Unknown tag");
 					}
 				}
 			}
 		} else {
-			throw std::runtime_error("Unknown attribute");
+			throw ClassParseException("Unknown attribute");
 		}
 	}
 }
@@ -231,7 +231,7 @@ void ClassLoader::load_class() {
 
 	uint32_t magic = m_stream->read<uint32_t>();
 	if (magic != CLASS_MAGIC) {
-		throw std::runtime_error("Magic number missing");
+		throw ClassParseException("Incompatible magic number");
 	}
 
 	uint16_t minor = m_stream->read<uint16_t>();
@@ -264,8 +264,7 @@ void ClassLoader::load_class() {
 			// located at index n+2. The constant_pool index n+1 must be valid
 			// but is considered unusable.
 			i++;
-			constant_pool.push_back(ConstPoolEntry{
-				.tag = ConstPoolTag::Null});
+			constant_pool.push_back(ConstPoolEntry{.tag = ConstPoolTag::Null});
 		} break;
 		case ConstPoolTag::String: {
 			uint16_t string_index = m_stream->read<uint16_t>();
@@ -297,7 +296,7 @@ void ClassLoader::load_class() {
 				.tag = ConstPoolTag::NameAndType, .name_index = name_idx});
 		} break;
 		default:
-			throw std::runtime_error("Unknown constant pool tag");
+			throw ClassParseException("Unknown constant pool tag");
 			break;
 		}
 		// break;

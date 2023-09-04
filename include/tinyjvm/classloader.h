@@ -1,11 +1,21 @@
 #pragma once
 #include <cstdint>
+#include <exception>
 #include <map>
 #include <stdio.h>
 #include <string>
 #include <vector>
 
 #define CLASS_MAGIC 0xCAFEBABE
+
+class ClassParseException : public std::exception {
+  public:
+	ClassParseException(const char *message) : m_message(message) {}
+	const char *what() { return m_message; }
+
+  private:
+	const char *m_message;
+};
 
 class ClassFileStream {
   public:
@@ -108,6 +118,7 @@ class ClassLoader {
 	}
 
 	std::map<uint16_t, std::string> classes;
+
   private:
 	void read_attributes(char *utf8, size_t utf8_length, uint16_t count);
 	void read(char *buffer, size_t size);
