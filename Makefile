@@ -1,4 +1,3 @@
-CXX=clang++
 OBJS = src/classloader.o \
 	   src/jvm.o \
 	   src/main.o \
