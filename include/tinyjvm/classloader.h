@@ -8,6 +8,7 @@
 
 #define CLASS_MAGIC 0xCAFEBABE
 
+namespace tinyJVM {
 class ClassParseException : public std::exception {
   public:
 	ClassParseException(const char *message) : m_message(message) {}
@@ -128,3 +129,4 @@ class ClassLoader {
 	std::string m_filename;
 	std::string m_class_name;
 };
+}

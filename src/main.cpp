@@ -1,6 +1,8 @@
 #include <tinyjvm/classloader.h>
 #include <tinyjvm/jvm.h>
 
+using namespace tinyJVM;
+
 int main(int argc, char *argv[]) {
 	if (argc < 3) {
 		printf("Usage: %s [MainClass] [ClassFile.class]\n", argv[0]);

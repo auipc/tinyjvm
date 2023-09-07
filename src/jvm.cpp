@@ -5,6 +5,7 @@
 #include <tinyjvm/jvm.h>
 #include <iostream>
 
+namespace tinyJVM {
 JVM::JVM(ClassLoader *classloader) : m_classloader(classloader) {
 	// auto root_stack_frame = StackFrame();
 	// m_stack.push_back(root_stack_frame);
@@ -120,4 +121,5 @@ void JVM::return_from_method() {
 	StackFrame *previous = &stack_frame();
 	m_current_stack_frame = stack_frame().parent;
 	delete previous;
+}
 }

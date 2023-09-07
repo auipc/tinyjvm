@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <map>
 
+namespace tinyJVM {
 class JVM;
 
 typedef void (*OpcodeFunc)(JVM& context);
@@ -65,3 +66,4 @@ namespace Opcodes {
 
 	extern std::map<uint8_t, OpcodeHandle> opcode_map;
 };
+}

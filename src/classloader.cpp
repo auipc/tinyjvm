@@ -8,6 +8,8 @@
 #include <tinyjvm/classloader.h>
 #include <tinyjvm/exceptions.h>
 
+namespace tinyJVM {
+
 ClassFileStream::ClassFileStream(const char *filename) : m_filename(filename) {
 	// I get le unix mindset is not having bloat
 	// but why isn't there a flag to read the entire file?
@@ -367,4 +369,5 @@ void ClassLoader::load_class() {
 	}
 
 	delete m_stream;
+}
 }

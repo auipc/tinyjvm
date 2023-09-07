@@ -1,6 +1,8 @@
 #include <tinyjvm/opcodes.h>
 #include <tinyjvm/jvm.h>
 
+namespace tinyJVM {
+
 void Opcodes::NOP(JVM& context) {
 	std::cout << "opcode\n";
 }
@@ -258,3 +260,4 @@ std::map<uint8_t, OpcodeHandle> Opcodes::opcode_map = {
 
 	{0xbc, OpcodeHandle{.no_parameters = 1, .parameter_type = OpcodeHandle::Byte, .function = Opcodes::NEWARRAY}},
 };
+}

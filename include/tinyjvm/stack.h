@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <vector>
 
+namespace tinyJVM {
+
 class StackUnderflowException : public std::exception {
 	const char *what() { return "Stack Underflow"; }
 };
@@ -24,3 +26,4 @@ class Stack {
   private:
 	std::vector<int32_t> m_stack;
 };
+}

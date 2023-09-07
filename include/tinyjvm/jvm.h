@@ -10,6 +10,8 @@
 #include <memory>
 #include <cstring>
 
+namespace tinyJVM {
+
 class ClassLoader;
 class JVM;
 
@@ -183,3 +185,4 @@ class JVM {
 	StackFrame *m_current_stack_frame;
 	ClassLoader *m_classloader;
 };
+}
