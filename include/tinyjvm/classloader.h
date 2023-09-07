@@ -114,7 +114,7 @@ class ClassLoader {
 	~ClassLoader();
 	void load_class();
 	std::map<std::string, Method> methods;
-	ConstPoolEntry get_const_pool_entry(uint16_t index) {
+	ConstPoolEntry get_const_pool_entry(uint16_t index) const {
 		return constant_pool.at(index - 1);
 	}
 
@@ -122,7 +122,7 @@ class ClassLoader {
 
   private:
 	void read_attributes(char *utf8, size_t utf8_length, uint16_t count);
-	void read(char *buffer, size_t size);
+	void read(char *buffer, size_t size) const;
 	std::vector<ConstPoolEntry> constant_pool;
 	// void read_const_pool(ClassFile_1& cfile);
 	ClassFileStream *m_stream = nullptr;

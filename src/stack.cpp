@@ -35,14 +35,14 @@ int64_t Stack::pop_64() {
 	return v;
 }
 
-int32_t Stack::peek() {
+int32_t Stack::peek() const {
 	if (!m_stack.size())
 		throw StackUnderflowException();
 	int32_t v = m_stack.back();
 	return v;
 }
 
-int64_t Stack::peek_64() {
+int64_t Stack::peek_64() const {
 	if (m_stack.size() < 2)
 		throw StackUnderflowException();
 	// FIXME this is probably endianess dependant
@@ -51,7 +51,7 @@ int64_t Stack::peek_64() {
 	return v;
 }
 
-void Stack::dump_stack() {
+void Stack::dump_stack() const {
 	std::cout << "Stack dump:\n";
 	for (auto &item : m_stack) {
 		std::cout << "\t" << item << "\n";

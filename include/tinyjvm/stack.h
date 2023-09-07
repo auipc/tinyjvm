@@ -16,11 +16,11 @@ class Stack {
 	// except addresses
 	void push(int32_t v);
 	void push_64(int64_t);
-	void dump_stack();
+	void dump_stack() const;
 	int32_t pop();
 	int64_t pop_64();
-	int32_t peek();
-	int64_t peek_64();
+	int32_t peek() const;
+	int64_t peek_64() const;
 	inline size_t size() { return m_stack.size(); }
 
   private:

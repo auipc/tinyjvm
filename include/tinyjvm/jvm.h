@@ -97,7 +97,7 @@ class JVM {
 		m_exit = true;
 	}
 
-	int exitcode() { return m_exitcode; }
+	int exitcode() const { return m_exitcode; }
 
 	void lstore(uint16_t index, int64_t value);
 	void istore(uint16_t index, int32_t value);
@@ -143,8 +143,8 @@ class JVM {
 		}
 	};
 
-	inline StackFrame &stack_frame() { return *m_current_stack_frame; }
-	inline Stack &operand_stack() {
+	inline StackFrame &stack_frame() const { return *m_current_stack_frame; }
+	inline Stack &operand_stack() const {
 		return m_current_stack_frame->operand_stack;
 	}
 
@@ -158,7 +158,7 @@ class JVM {
 		return m_current_stack_frame->pc;
 	}
 
-	inline uint32_t get_program_counter() {
+	inline uint32_t get_program_counter() const {
 		return m_current_stack_frame->pc;
 	}
 
@@ -170,7 +170,7 @@ class JVM {
 		m_current_stack_frame->pc += pc;
 	}
 
-	inline int max_locals() {
+	inline int max_locals() const {
 		return m_current_stack_frame->operating_bytecode.max_locals-1;
 	}
 
