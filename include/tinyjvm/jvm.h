@@ -2,11 +2,11 @@
 // Hate using the C++ STL
 #include <tinyjvm/classloader.h>
 #include <tinyjvm/stack.h>
-#include <cstdint>
+#include <stdint.h>
 #include <iostream>
 #include <stdio.h>
 #include <vector>
-#include <cassert>
+#include <assert.h>
 #include <memory>
 #include <cstring>
 
@@ -44,19 +44,21 @@ class Variable {
 			throw std::runtime_error("Variable is null");
 
 		if (m_tag == Tags::Integer != std::is_same<T, int32_t>::value)
-			throw std::runtime_error("Invalid type");
+			throw std::runtime_error("Invalid Integer type");
 		if (m_tag == Tags::Float != std::is_same<T, float>::value)
-			throw std::runtime_error("Invalid type");
+			throw std::runtime_error("Invalid Float type");
 		if (m_tag == Tags::Long != std::is_same<T, int64_t>::value)
-			throw std::runtime_error("Invalid type");
+			throw std::runtime_error("Invalid Long type");
 		if (m_tag == Tags::Double != std::is_same<T, double>::value)
-			throw std::runtime_error("Invalid type");
-		if (m_tag == Tags::ObjectReference != std::is_same<T, uintptr_t>::value)
-			throw std::runtime_error("Invalid type");
-		if (m_tag == Tags::ArrayRef != std::is_same<T, uintptr_t>::value)
-			throw std::runtime_error("Invalid type");
+			throw std::runtime_error("Invalid Double type");
+		if ((m_tag == Tags::ObjectReference || m_tag == Tags::ArrayRef) != std::is_same<T, uintptr_t>::value)
+			throw std::runtime_error("Invalid ObjectReference type");
 
 		return *(T *)m_data;
+	}
+
+	void mark(Tags new_tag) {
+		m_tag = new_tag;
 	}
 
 	template <typename T> void set(Tags new_tag, T value) {
@@ -87,6 +89,49 @@ class Variable {
 	bool m_is_null;
 };
 
+class VMObject {
+public:
+	inline void ref() { m_references++; }
+	inline void deref() {
+		// TODO after we reach zero refs, we should put the object on a queue so searching for unused objects isn't long.
+		m_references--;
+		// if we deref again, something has gone wrong.
+		assert(m_references != INT_MAX);
+	}
+
+	inline uint32_t refcount() { return m_references; }
+private:
+	uint32_t m_references = 1;
+};
+
+class Array : public VMObject {
+public:
+	Array(Variable::Tags type, size_t size) 
+		: m_size(size)
+	{
+		// Allocate the memory
+		m_data.resize(m_size);
+		for (int i = 0; i < m_size; i++) {
+			m_data[i] = std::make_shared<Variable>();
+			m_data[i]->mark(type);
+		}
+	}
+
+	// Disallow copying, there really shouldn't be more than a single copy of this array.
+	Array &operator=(const Array &) = delete;
+
+	std::shared_ptr<Variable> &operator[](int index) {
+		return m_data[index];
+	}
+
+
+	size_t size() { return m_size; }
+
+private:
+	std::vector<std::shared_ptr<Variable>> m_data;
+	size_t m_size;
+};
+
 class JVM {
   public:
 	JVM(ClassLoader *classloader);
@@ -113,6 +158,7 @@ class JVM {
 		// We should probably create a generic class called Variable that will
 		// be able to hold anything and everything.
 		std::vector<std::shared_ptr<Variable>> local_variables;
+		std::vector<size_t> arrays_created;
 
 		StackFrame() {
 			pc = 0;
@@ -142,6 +188,8 @@ class JVM {
 			}
 		}
 	};
+	
+	void collect_garbage();
 
 	inline StackFrame &stack_frame() const { return *m_current_stack_frame; }
 	inline Stack &operand_stack() const {
@@ -171,7 +219,18 @@ class JVM {
 	}
 
 	inline int max_locals() const {
-		return m_current_stack_frame->operating_bytecode.max_locals-1;
+		return m_current_stack_frame->operating_bytecode.max_locals;
+	}
+
+	inline size_t add_array(Variable::Tags tag, int size) {
+		size_t ref = s_arrayrefs++;
+		m_arrayrefs[ref] = std::make_shared<Array>(tag, size);
+		return ref;
+	}
+
+	// TODO throw an error on an invalid index
+	inline std::shared_ptr<Array> get_array(size_t index) {
+		return m_arrayrefs[index];
 	}
 
 	inline ClassLoader* classloader() { return m_classloader; }
@@ -181,6 +240,8 @@ class JVM {
   private:
 	bool m_exit = false;
 	int m_exitcode = 0;
+	static size_t s_arrayrefs;
+	std::map<size_t, std::shared_ptr<Array>> m_arrayrefs;
 	std::vector<StackFrame> m_stack;
 	StackFrame *m_current_stack_frame;
 	ClassLoader *m_classloader;

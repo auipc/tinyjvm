@@ -107,6 +107,14 @@ void Opcodes::ILOAD_2(JVM &context) {
 		context.stack_frame().local_variables[2]->get_fault_type<int>());
 }
 
+void Opcodes::ALOAD_1(JVM &context) {
+	context.operand_stack().push_64(context.stack_frame().local_variables[1]->get_fault_type<uintptr_t>());
+}
+
+void Opcodes::ASTORE_1(JVM &context) {
+	context.stack_frame().local_variables[1]->set(Variable::Tags::ArrayRef, (uintptr_t)context.operand_stack().pop_64());
+}
+
 void Opcodes::LLOAD(JVM &context) {
 	uint8_t index = context.opcode_parameters.at(0).get()->get_fault_type<int>();
 	std::cout << (int)index << "\n";
@@ -202,9 +210,33 @@ void Opcodes::NEWARRAY(JVM &context) {
 	 */
 	uint8_t primitive_index = (uint8_t)context.opcode_parameters.at(0).get()->get_fault_type<int>();
 	uint32_t array_size = context.operand_stack().pop();
-	std::cout << "primtiive_index " << (int)primitive_index << "\n";
-	std::cout << "array_size " << (int)array_size << "\n";
-	context.exit("TODO NEWARRAY", 1);
+
+	Variable::Tags tag;
+	switch (primitive_index) {
+		// FIXME We default to integer, we can use better containers later
+		case 4:
+		case 5:
+		case 8:
+		case 9:
+		case 10:
+			tag = Variable::Tags::Integer;
+			break;
+		case 6:
+			tag = Variable::Tags::Float;
+			break;
+		case 7:
+			tag = Variable::Tags::Double;
+			break;
+		case 11:
+			tag = Variable::Tags::Long;
+			break;
+	}
+
+	size_t array_ref = context.add_array(tag, array_size);
+	context.stack_frame().arrays_created.push_back(array_ref);
+	
+	// Push the arrayref
+	context.operand_stack().push_64(array_ref);
 }
 
 void Opcodes::Unknown(JVM& context) {
@@ -246,6 +278,9 @@ std::map<uint8_t, OpcodeHandle> Opcodes::opcode_map = {
 	{0x1a, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ILOAD_0}},
 	{0x1b, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ILOAD_1}},
 	{0x1c, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ILOAD_2}},
+
+	{0x2b, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ALOAD_1}},
+	{0x4c, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ASTORE_1}},
 
 	{0x60, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IADD}},
 	{0x61, OpcodeHandle{.no_parameters = 0, .function = Opcodes::LADD}},

@@ -1,4 +1,4 @@
-#include <cassert>
+#include <assert.h>
 #include <iostream>
 #include <tinyjvm/stack.h>
 

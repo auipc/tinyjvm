@@ -1,5 +1,5 @@
 #pragma once
-#include <cstdint>
+#include <stdint.h>
 #include <map>
 
 namespace tinyJVM {
@@ -17,6 +17,7 @@ struct OpcodeHandle {
 	OpcodeFunc function;
 };
 
+// FIXME Having this in a header file is sort of useless!
 namespace Opcodes {
 	void NOP(JVM& context);
 	void INVOKESTATIC(JVM& context);
@@ -38,6 +39,9 @@ namespace Opcodes {
 	void ISTORE_1(JVM& context);
 	void ISTORE_2(JVM& context);
 	void ISTORE_3(JVM& context);
+
+	void ALOAD_1(JVM& context);
+	void ASTORE_1(JVM& context);
 
 	void ISTORE(JVM& context);
 	void LSTORE(JVM& context);

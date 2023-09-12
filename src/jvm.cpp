@@ -1,11 +1,13 @@
 #include <arpa/inet.h>
-#include <cassert>
+#include <assert.h>
 #include <tinyjvm/classloader.h>
 #include <tinyjvm/opcodes.h>
 #include <tinyjvm/jvm.h>
 #include <iostream>
 
 namespace tinyJVM {
+size_t JVM::s_arrayrefs = 0;
+
 JVM::JVM(ClassLoader *classloader) : m_classloader(classloader) {
 	// auto root_stack_frame = StackFrame();
 	// m_stack.push_back(root_stack_frame);
@@ -108,8 +110,29 @@ void JVM::lstore(uint16_t index, int64_t value) {
 
 void JVM::jump_to(int32_t offset) { add_program_counter(offset - 1); }
 
+void JVM::collect_garbage() {
+	// TODO after we reach zero refs, we should put the object on a queue so searching for unused objects isn't long.
+	for (auto it = m_arrayrefs.cbegin(); it != m_arrayrefs.cend();) {
+		if (!it->second->refcount()) {
+			std::cout << "Deleting object\n";
+			m_arrayrefs.erase(it++);
+			continue;
+		}
+		it++;
+	}
+}
+
 void JVM::return_from_method() {
 	std::cout << "return\n";
+
+	// Deref all objects after we leave the method
+	for (auto object : stack_frame().arrays_created) {
+		m_arrayrefs[object]->deref();
+	}
+
+	// invoke GC
+	collect_garbage();
+
 	// If our current stackframe's parent is null we return
 	if (!stack_frame().parent) {
 		std::cout << "Exit from main"
@@ -118,8 +141,10 @@ void JVM::return_from_method() {
 		return;
 	}
 
-	StackFrame *previous = &stack_frame();
+	StackFrame &previous = stack_frame();
 	m_current_stack_frame = stack_frame().parent;
-	delete previous;
+
+	// This sucks
+	delete &previous;
 }
 }

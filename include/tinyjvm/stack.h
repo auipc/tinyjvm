@@ -1,6 +1,6 @@
 #pragma once
 #include <arpa/inet.h>
-#include <cstdint>
+#include <stdint.h>
 #include <vector>
 
 namespace tinyJVM {
