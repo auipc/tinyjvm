@@ -152,6 +152,12 @@ void Opcodes::LDC2_W(JVM &context) {
 	std::cout << "Long pushed " << context.operand_stack().peek_64() << "\n";
 }
 
+void Opcodes::ARETURN(JVM &context) {
+	auto parent = context.stack_frame().parent;
+	parent->operand_stack.push_64(context.operand_stack().pop_64());
+	context.return_from_method();
+}
+
 void Opcodes::RETURN(JVM &context) {
 	context.return_from_method();
 }
@@ -195,6 +201,13 @@ void Opcodes::ISTORE(JVM &context) {
 void Opcodes::LSTORE(JVM &context) {
 	int index = context.opcode_parameters.at(0).get()->get_fault_type<int>();
 	context.lstore((uint8_t)index, context.operand_stack().pop_64());
+}
+
+void Opcodes::IASTORE(JVM &context) {
+	int index = context.operand_stack().pop();
+	int value = context.operand_stack().pop();
+	size_t arrayref = context.operand_stack().pop_64();
+	context.get_array(arrayref);
 }
 
 void Opcodes::NEWARRAY(JVM &context) {
@@ -281,6 +294,7 @@ std::map<uint8_t, OpcodeHandle> Opcodes::opcode_map = {
 
 	{0x2b, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ALOAD_1}},
 	{0x4c, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ASTORE_1}},
+	{0x4f, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IASTORE}},
 
 	{0x60, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IADD}},
 	{0x61, OpcodeHandle{.no_parameters = 0, .function = Opcodes::LADD}},
@@ -288,6 +302,7 @@ std::map<uint8_t, OpcodeHandle> Opcodes::opcode_map = {
 	{0x69, OpcodeHandle{.no_parameters = 0, .function = Opcodes::LMUL}},
 	{0x6c, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IDIV}},
 
+	{0xb0, OpcodeHandle{.no_parameters = 0, .function = Opcodes::ARETURN}},
 	{0xb1, OpcodeHandle{.no_parameters = 0, .function = Opcodes::RETURN}},
 	{0xac, OpcodeHandle{.no_parameters = 0, .function = Opcodes::IRETURN}},
 

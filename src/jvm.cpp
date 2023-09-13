@@ -113,12 +113,16 @@ void JVM::jump_to(int32_t offset) { add_program_counter(offset - 1); }
 void JVM::collect_garbage() {
 	// TODO after we reach zero refs, we should put the object on a queue so searching for unused objects isn't long.
 	for (auto it = m_arrayrefs.cbegin(); it != m_arrayrefs.cend();) {
-		if (!it->second->refcount()) {
-			std::cout << "Deleting object\n";
-			m_arrayrefs.erase(it++);
+		if (!it->second) {
+			it++;
 			continue;
 		}
-		it++;
+
+		if (!it->second->refcount()) {
+			std::cout << "Deleting object\n";
+			delete it->second;
+			m_arrayrefs.erase(it++);
+		}
 	}
 }
 

@@ -43,6 +43,8 @@ namespace Opcodes {
 	void ALOAD_1(JVM& context);
 	void ASTORE_1(JVM& context);
 
+	void IASTORE(JVM& context);
+
 	void ISTORE(JVM& context);
 	void LSTORE(JVM& context);
 
@@ -61,6 +63,7 @@ namespace Opcodes {
 
 	void LDC2_W(JVM& context);
 
+	void ARETURN(JVM& context);
 	void RETURN(JVM& context);
 	void IRETURN(JVM& context);
 

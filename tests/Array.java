@@ -1,6 +1,11 @@
 class Array {
+
+	public static int[] make_array() {
+		return new int[10];
+	}
+
     public static void main(String[] args) {
-	    int[] a = new int[10];
+	    int[] a = make_array();
 	    // insert unsorted values into array
 	    a[0] = 5;
 	    a[1] = 2;

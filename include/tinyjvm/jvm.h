@@ -224,12 +224,12 @@ class JVM {
 
 	inline size_t add_array(Variable::Tags tag, int size) {
 		size_t ref = s_arrayrefs++;
-		m_arrayrefs[ref] = std::make_shared<Array>(tag, size);
+		m_arrayrefs[ref] = new Array(tag, size);
 		return ref;
 	}
 
 	// TODO throw an error on an invalid index
-	inline std::shared_ptr<Array> get_array(size_t index) {
+	inline Array* get_array(size_t index) {
 		return m_arrayrefs[index];
 	}
 
@@ -241,7 +241,7 @@ class JVM {
 	bool m_exit = false;
 	int m_exitcode = 0;
 	static size_t s_arrayrefs;
-	std::map<size_t, std::shared_ptr<Array>> m_arrayrefs;
+	std::map<size_t, Array*> m_arrayrefs;
 	std::vector<StackFrame> m_stack;
 	StackFrame *m_current_stack_frame;
 	ClassLoader *m_classloader;
