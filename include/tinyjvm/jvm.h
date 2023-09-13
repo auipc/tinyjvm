@@ -158,7 +158,7 @@ class JVM {
 		// We should probably create a generic class called Variable that will
 		// be able to hold anything and everything.
 		std::vector<std::shared_ptr<Variable>> local_variables;
-		std::vector<size_t> arrays_created;
+		std::vector<size_t> arrays_owned;
 
 		StackFrame() {
 			pc = 0;

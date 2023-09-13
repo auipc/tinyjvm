@@ -154,7 +154,11 @@ void Opcodes::LDC2_W(JVM &context) {
 
 void Opcodes::ARETURN(JVM &context) {
 	auto parent = context.stack_frame().parent;
-	parent->operand_stack.push_64(context.operand_stack().pop_64());
+	size_t arrayref = context.operand_stack().pop_64();
+	// Pass reference to other function
+	context.get_array(arrayref)->ref();
+	parent->arrays_owned.push_back(arrayref);
+	parent->operand_stack.push_64(arrayref);
 	context.return_from_method();
 }
 
@@ -246,7 +250,7 @@ void Opcodes::NEWARRAY(JVM &context) {
 	}
 
 	size_t array_ref = context.add_array(tag, array_size);
-	context.stack_frame().arrays_created.push_back(array_ref);
+	context.stack_frame().arrays_owned.push_back(array_ref);
 	
 	// Push the arrayref
 	context.operand_stack().push_64(array_ref);

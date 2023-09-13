@@ -122,7 +122,9 @@ void JVM::collect_garbage() {
 			std::cout << "Deleting object\n";
 			delete it->second;
 			m_arrayrefs.erase(it++);
+			continue;
 		}
+		it++;
 	}
 }
 
@@ -130,7 +132,7 @@ void JVM::return_from_method() {
 	std::cout << "return\n";
 
 	// Deref all objects after we leave the method
-	for (auto object : stack_frame().arrays_created) {
+	for (auto object : stack_frame().arrays_owned) {
 		m_arrayrefs[object]->deref();
 	}
 
