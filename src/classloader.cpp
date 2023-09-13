@@ -121,7 +121,7 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 			m_stream->read_length(reinterpret_cast<void *>(code), code_length);
 
 			methods[std::string(utf8, utf8_length)] =
-				Method{max_stack, max_locals-1, code_length, code};
+				Method{max_stack, static_cast<uint16_t>(max_locals-1), code_length, code};
 
 			uint16_t exception_table_length = m_stream->read<uint16_t>();
 			if (exception_table_length > 0) {
