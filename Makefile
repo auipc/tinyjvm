@@ -4,7 +4,7 @@ OBJS = src/classloader.o \
 	   src/stack.o \
 	   src/opcodes.o
 
-CXXFLAGS=-Iinclude -g -fsanitize=undefined -MMD -MP -std=c++20
+CXXFLAGS=-Iinclude -g -fsanitize=undefined -MMD -MP -std=c++20 -Wall
 
 TINYJVM=jvm
 
