@@ -9,8 +9,6 @@ namespace tinyJVM {
 size_t JVM::s_arrayrefs = 0;
 
 JVM::JVM(ClassLoader *classloader) : m_classloader(classloader) {
-	// auto root_stack_frame = StackFrame();
-	// m_stack.push_back(root_stack_frame);
 	auto root_stack_frame = StackFrame::create(nullptr);
 	m_stack.push_back(root_stack_frame);
 	// root stackframe
@@ -141,8 +139,6 @@ void JVM::return_from_method() {
 
 	// If our current stackframe's parent is null we return
 	if (!stack_frame().parent) {
-		std::cout << "Exit from main"
-				  << "\n";
 		exit("Exit from main");
 		return;
 	}

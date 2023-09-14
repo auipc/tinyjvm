@@ -1,5 +1,4 @@
 #pragma once
-// Hate using the C++ STL
 #include <tinyjvm/classloader.h>
 #include <tinyjvm/stack.h>
 #include <stdint.h>
@@ -35,11 +34,11 @@ class Variable {
 			delete[] m_data;
 	}
 
-	template <typename T> T get() {
+	template <typename T> T get() const {
 		return *(T *)m_data;
 	}
 
-	template <typename T> T get_fault_type() {
+	template <typename T> T get_fault_type() const {
 		if (!m_data)
 			throw std::runtime_error("Variable is null");
 
@@ -62,8 +61,6 @@ class Variable {
 	}
 
 	template <typename T> void set(Tags new_tag, T value) {
-		//if (new_tag == Tags::Long)
-
 		if (!m_is_null) {
 			if (new_tag != m_tag) {
 				delete[] m_data;
@@ -99,7 +96,7 @@ public:
 		assert(m_references != INT_MAX);
 	}
 
-	inline uint32_t refcount() { return m_references; }
+	inline uint32_t refcount() const { return m_references; }
 private:
 	uint32_t m_references = 1;
 };
@@ -125,7 +122,7 @@ public:
 	}
 
 
-	size_t size() { return m_size; }
+	inline size_t size() const { return m_size; }
 
 private:
 	std::vector<std::shared_ptr<Variable>> m_data;
