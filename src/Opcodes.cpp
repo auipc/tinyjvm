@@ -1,5 +1,5 @@
-#include <tinyjvm/opcodes.h>
-#include <tinyjvm/jvm.h>
+#include <tinyjvm/Opcodes.h>
+#include <tinyjvm/JVM.h>
 
 namespace tinyJVM {
 
@@ -10,17 +10,17 @@ void Opcodes::NOP(JVM& context) {
 void Opcodes::INVOKESTATIC(JVM& context) {
 	int index = context.opcode_parameters.at(0).get()->get_fault_type<int>();
 
-	auto cp_entry = context.classloader()->get_const_pool_entry(index);
-	if (cp_entry.tag != ConstPoolTag::MethodRef) {
+	auto cp_entry = context.classloader()->constant_pool().get(index);
+	if (cp_entry.tag != ConstantPool::PoolEntry::Tag::MethodRef) {
 		std::cout << "Expected CONSTANT_Methodref, got " << cp_entry.tag
 				  << "\n";
 		context.exit("Bad constant pool entry");
 	}
 
 	auto name_and_type =
-		context.classloader()->get_const_pool_entry(cp_entry.name_and_type_index);
+		context.classloader()->constant_pool().get(cp_entry.method_ref.name_and_type_index);
 
-	if (name_and_type.tag != ConstPoolTag::NameAndType) {
+	if (name_and_type.tag != ConstantPool::PoolEntry::Tag::NameAndType) {
 		std::cout << "Expected CONSTANT_NameAndType, got "
 				  << name_and_type.tag << "\n";
 		context.exit("Bad constant pool entry");
@@ -28,8 +28,8 @@ void Opcodes::INVOKESTATIC(JVM& context) {
 
 	// FIXME utf8 isn't null terminated. sort of a big issue
 	auto name_str =
-		context.classloader()->get_const_pool_entry(name_and_type.name_index);
-	std::cout << name_str.utf8 << "\n";
+		context.classloader()->constant_pool().get(name_and_type.name_and_type.name_index);
+	std::cout << name_str.utf8.string << "\n";
 
 	// ugly
 	context.set_stack_frame(&JVM::StackFrame::create(&context.stack_frame()));
@@ -37,7 +37,7 @@ void Opcodes::INVOKESTATIC(JVM& context) {
 	// otherwise the stack will be corrupted and we won't find the function
 	// we're looking for.
 	context.stack_frame().set_operating_bytecode(
-		context.classloader()->methods[std::string(name_str.utf8)]);
+		context.classloader()->methods[std::string(name_str.utf8.string, name_str.utf8.length)]);
 }
 
 void Opcodes::ICONST_M1(JVM &context) {
@@ -142,13 +142,14 @@ void Opcodes::LADD(JVM &context) {
 
 void Opcodes::LDC2_W(JVM &context) {
 	int index = context.opcode_parameters.at(0).get()->get_fault_type<int>();
-	auto cp_entry = context.classloader()->get_const_pool_entry(index);
-	if (cp_entry.tag != ConstPoolTag::Long) {
+	std::cout << index << "\n";
+	auto cp_entry = context.classloader()->constant_pool().get(index);
+	if (cp_entry.tag != ConstantPool::PoolEntry::Tag::Long) {
 		std::cout << "Expected CONSTANT_Long, got " << cp_entry.tag << "\n";
 		context.exit("Bad constant pool entry");
 	}
-	std::cout << "Pushing long " << cp_entry.numbers.long_integer << "\n";
-	context.operand_stack().push_64(cp_entry.numbers.long_integer);
+	std::cout << "Pushing long " << cp_entry.number.long_integer << "\n";
+	context.operand_stack().push_64(cp_entry.number.long_integer);
 	std::cout << "Long pushed " << context.operand_stack().peek_64() << "\n";
 }
 

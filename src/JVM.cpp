@@ -1,8 +1,8 @@
 #include <arpa/inet.h>
 #include <assert.h>
-#include <tinyjvm/classloader.h>
-#include <tinyjvm/opcodes.h>
-#include <tinyjvm/jvm.h>
+#include <tinyjvm/ClassLoader.h>
+#include <tinyjvm/Opcodes.h>
+#include <tinyjvm/JVM.h>
 #include <iostream>
 
 namespace tinyJVM {

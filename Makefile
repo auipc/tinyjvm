@@ -1,8 +1,9 @@
-OBJS = src/classloader.o \
-	   src/jvm.o \
+OBJS = src/ClassLoader.o \
+	   src/JVM.o \
 	   src/main.o \
-	   src/stack.o \
-	   src/opcodes.o
+	   src/Stack.o \
+	   src/Opcodes.o \
+	   src/ConstantPool.o
 
 CXXFLAGS=-Iinclude -g -fsanitize=undefined -MMD -MP -std=c++20 -Wall
 

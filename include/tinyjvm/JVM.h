@@ -1,6 +1,7 @@
 #pragma once
-#include <tinyjvm/classloader.h>
-#include <tinyjvm/stack.h>
+// Hate using the C++ STL
+#include <tinyjvm/ClassLoader.h>
+#include <tinyjvm/Stack.h>
 #include <stdint.h>
 #include <iostream>
 #include <stdio.h>
@@ -38,6 +39,7 @@ class Variable {
 		return *(T *)m_data;
 	}
 
+	// TODO add smaller types
 	template <typename T> T get_fault_type() const {
 		if (!m_data)
 			throw std::runtime_error("Variable is null");

@@ -5,8 +5,8 @@
 #include <exception>
 #include <iostream>
 #include <stdexcept>
-#include <tinyjvm/classloader.h>
-#include <tinyjvm/exceptions.h>
+#include <tinyjvm/ClassLoader.h>
+#include <tinyjvm/Exceptions.h>
 
 namespace tinyJVM {
 
@@ -62,6 +62,12 @@ template <typename T> void SwapEndian(T &val) {
 	val = dst.val;
 }
 
+void ClassFileStream::read_length(void *buffer, size_t length) {
+	std::vector<char> data = consume(sizeof(uint8_t) * length);
+	memcpy(buffer, data.data(), sizeof(uint8_t) * length);
+	SwapEndian(buffer);
+}
+
 template <typename T> T ClassFileStream::read() {
 	T x;
 	std::vector<char> data = consume(sizeof(x));
@@ -70,33 +76,8 @@ template <typename T> T ClassFileStream::read() {
 	return x;
 }
 
-void ClassFileStream::read_length(void *buffer, size_t length) {
-	std::vector<char> data = consume(sizeof(uint8_t) * length);
-	memcpy(buffer, data.data(), sizeof(uint8_t) * length);
-	SwapEndian(buffer);
-}
-
-uint32_t ClassFileStream::read_u4() {
-	uint32_t u4;
-	std::vector<char> data = consume(4);
-	memcpy(&u4, data.data(), 4);
-	u4 = htonl(u4);
-
-	return u4;
-}
-
-uint16_t ClassFileStream::read_u2() {
-	uint16_t u2;
-	std::vector<char> data = consume(2);
-	memcpy(&u2, data.data(), 2);
-	u2 = htons(u2);
-	m_position += 2;
-
-	return u2;
-}
-
 ClassLoader::ClassLoader(std::string class_name, std::string filename)
-	: m_class_name(class_name), m_filename(filename) {}
+	: m_class_name(class_name), m_filename(filename), m_constant_pool(nullptr) {}
 
 ClassLoader::~ClassLoader() {}
 
@@ -105,15 +86,15 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 	for (int i = 0; i < count; i++) {
 		uint16_t attribute_name_idx = m_stream->read<uint16_t>();
 		uint32_t attribute_length = m_stream->read<uint32_t>();
-		auto cp_entry = constant_pool.at(attribute_name_idx - 1);
+		auto cp_entry = constant_pool().get(attribute_name_idx); //.at(attribute_name_idx - 1);
 
 		// Skip over all entries not of type Utf8
-		if (cp_entry.tag != ConstPoolTag::Utf8)
+		if (cp_entry.tag != ConstantPool::PoolEntry::Tag::Utf8)
 			continue;
 		// uint8_t* info = new uint8_t[attribute_length];
 		// m_stream->read_length(reinterpret_cast<void*>(info),
 		// attribute_length);
-		if (strncmp(cp_entry.utf8, "Code", cp_entry.utf8_length) == 0) {
+		if (strncmp(cp_entry.utf8.string, "Code", cp_entry.utf8.length) == 0) {
 			uint16_t max_stack = m_stream->read<uint16_t>();
 			uint16_t max_locals = m_stream->read<uint16_t>();
 			uint32_t code_length = m_stream->read<uint32_t>();
@@ -132,18 +113,18 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 
 			uint16_t attributes_count = m_stream->read<uint16_t>();
 			read_attributes(utf8, utf8_length, attributes_count);
-		} else if (strncmp(cp_entry.utf8, "LineNumberTable",
-						   cp_entry.utf8_length) == 0) {
+		} else if (strncmp(cp_entry.utf8.string, "LineNumberTable",
+						   cp_entry.utf8.length) == 0) {
 			uint16_t line_number_table_length = m_stream->read<uint16_t>();
 			for (int j = 0; j < line_number_table_length; j++) {
 				uint16_t start_pc = m_stream->read<uint16_t>();
 				uint16_t line_number = m_stream->read<uint16_t>();
 			}
-		} else if (strncmp(cp_entry.utf8, "ConstantValue",
-						   cp_entry.utf8_length) == 0) {
+		} else if (strncmp(cp_entry.utf8.string, "ConstantValue",
+						   cp_entry.utf8.length) == 0) {
 			uint16_t constantvalue_index = m_stream->read<uint16_t>();
-		} else if (strncmp(cp_entry.utf8, "StackMapTable",
-						   cp_entry.utf8_length) == 0) {
+		} else if (strncmp(cp_entry.utf8.string, "StackMapTable",
+						   cp_entry.utf8.length) == 0) {
 			uint16_t number_of_entries = m_stream->read<uint16_t>();
 			for (int j = 0; j < number_of_entries; j++) {
 				uint8_t frame_type = m_stream->read<uint8_t>();
@@ -185,6 +166,7 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 						} break;
 						default:
 							throw ClassParseException("unknown tag");
+							break;
 						}
 					}
 				} else if (frame_type == 255) {
@@ -194,24 +176,20 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 					// read verification_type_info
 					for (int i = 0; i < number_of_locals; i++) {
 						uint8_t tag = m_stream->read<uint8_t>();
-						if (tag == 7) {
-							uint16_t cpool_index = m_stream->read<uint16_t>();
-						} else if (tag == 8) {
-							uint16_t offset = m_stream->read<uint16_t>();
-						} else if (tag == 6) {
-							throw ClassParseException("Unimplemented tag");
-						} else if (tag == 4) {
-							// throw ClassParseException("Unimplemented tag");
-						} else if (tag == 3) {
-							throw ClassParseException("Unimplemented tag");
-						} else if (tag == 2) {
-							throw ClassParseException("Unimplemented tag");
-						} else if (tag == 1) {
-							// throw ClassParseException("Unimplemented tag");
-						} else if (tag == 0) {
-							throw ClassParseException("Unimplemented tag");
-						} else if (tag == 5) {
-							throw ClassParseException("Unimplemented tag");
+						switch (tag) {
+							case 7:
+								(void)m_stream->read<uint16_t>();
+								break;
+							case 8:
+								(void)m_stream->read<uint16_t>();
+								break;
+							// These can just be ignored, for now.
+							case 1:
+							case 4:
+								break;
+							default:
+								throw ClassParseException("Unimplemented tag");
+								break;
 						}
 					}
 
@@ -227,7 +205,6 @@ void ClassLoader::read_attributes(char *utf8, size_t utf8_length,
 	}
 }
 
-// TODO methods
 void ClassLoader::load_class() {
 	m_stream = new ClassFileStream(m_filename.c_str());
 
@@ -240,25 +217,39 @@ void ClassLoader::load_class() {
 	uint16_t major = m_stream->read<uint16_t>();
 
 	uint16_t constant_pool_size = m_stream->read<uint16_t>();
+
+	// Create a constant pool container
+	m_constant_pool = new ConstantPool(constant_pool_size);
+
 	for (int i = 0; i < constant_pool_size - 1; i++) {
 		uint8_t tag = m_stream->read<uint8_t>();
-		// TODO parse each object in the pool
 		switch (tag) {
-		case ConstPoolTag::Utf8: {
+		case ConstantPool::PoolEntry::Tag::Utf8: {
 			uint16_t length = m_stream->read<uint16_t>();
 			// This isn't terminated by a NUL byte so be careful when operating
 			// on it.
 			char *buffer = new char[length];
 			m_stream->read_length(reinterpret_cast<void *>(buffer), length);
-			constant_pool.push_back(
-				ConstPoolEntry{ConstPoolTag::Utf8, buffer, length});
+			m_constant_pool->add_entry(i, ConstantPool::PoolEntry{
+				.tag = ConstantPool::PoolEntry::Tag::Utf8,
+				.utf8 = {
+					.string = buffer,
+					.length = length
+				}
+			});
+			//constant_pool.push_back(
+				//ConstPoolEntry{ConstantPool::PoolEntry::Tag::Utf8, buffer, length});
 			// FIXME delete buffer for now
 			// delete[] buffer;
 		} break;
-		case ConstPoolTag::Long: {
+		case ConstantPool::PoolEntry::Tag::Long: {
 			int64_t value = m_stream->read<int64_t>();
-			constant_pool.push_back(ConstPoolEntry{
-				.tag = ConstPoolTag::Long, .numbers = {.long_integer = value}});
+			m_constant_pool->add_entry(i, ConstantPool::PoolEntry{
+				.tag = ConstantPool::PoolEntry::Tag::Long,
+				.number = {
+					.long_integer = value
+				}
+			});
 			// All 8-byte constants take up two entries in the constant_pool
 			// table of the class file. If a CONSTANT_Long_info or
 			// CONSTANT_Double_info structure is the entry at index n in the
@@ -266,36 +257,54 @@ void ClassLoader::load_class() {
 			// located at index n+2. The constant_pool index n+1 must be valid
 			// but is considered unusable.
 			i++;
-			constant_pool.push_back(ConstPoolEntry{.tag = ConstPoolTag::Null});
+			m_constant_pool->add_entry(i, ConstantPool::PoolEntry{
+				.tag = ConstantPool::PoolEntry::Tag::Null
+			});
 		} break;
-		case ConstPoolTag::String: {
+		case ConstantPool::PoolEntry::Tag::String: {
 			uint16_t string_index = m_stream->read<uint16_t>();
-			constant_pool.push_back(ConstPoolEntry{ConstPoolTag::String});
+			//constant_pool.push_back(ConstPoolEntry{ConstantPool::PoolEntry::Tag::String});
+			m_constant_pool->add_entry(i, ConstantPool::PoolEntry{
+				.tag = ConstantPool::PoolEntry::Tag::String,
+			});
 		} break;
-		case ConstPoolTag::Class: {
+		case ConstantPool::PoolEntry::Tag::Class: {
 			uint16_t name_idx = m_stream->read<uint16_t>();
-			constant_pool.push_back(ConstPoolEntry{.tag = ConstPoolTag::Class,
-												   .name_index = name_idx});
+			m_constant_pool->add_entry(i, ConstantPool::PoolEntry{
+				.tag = ConstantPool::PoolEntry::Tag::Class,
+				.class_ref = {
+					.name_index = name_idx
+				}
+			});
 		} break;
-		case ConstPoolTag::FieldRef: {
+		case ConstantPool::PoolEntry::Tag::FieldRef: {
 			uint16_t class_idx = m_stream->read<uint16_t>();
 			uint16_t name_and_type_idx = m_stream->read<uint16_t>();
-			constant_pool.push_back(ConstPoolEntry{ConstPoolTag::FieldRef});
+			m_constant_pool->add_entry(i, ConstantPool::PoolEntry{
+				.tag = ConstantPool::PoolEntry::Tag::FieldRef,
+			});
 		} break;
-		case ConstPoolTag::MethodRef: {
+		case ConstantPool::PoolEntry::Tag::MethodRef: {
 			uint16_t class_idx = m_stream->read<uint16_t>();
 			uint16_t name_and_type_idx = m_stream->read<uint16_t>();
-			constant_pool.push_back(
-				ConstPoolEntry{.tag = ConstPoolTag::MethodRef,
-							   .class_index = class_idx,
-							   .name_and_type_index = name_and_type_idx});
+			m_constant_pool->add_entry(i, ConstantPool::PoolEntry{
+				.tag = ConstantPool::PoolEntry::Tag::MethodRef,
+				.method_ref = {
+					.class_index = class_idx,
+					.name_and_type_index = name_and_type_idx
+				}
+			});
 		} break;
-		case ConstPoolTag::NameAndType: {
+		case ConstantPool::PoolEntry::Tag::NameAndType: {
 			uint16_t name_idx = m_stream->read<uint16_t>();
 			uint16_t descriptor_idx = m_stream->read<uint16_t>();
-			// FIXME include descriptor
-			constant_pool.push_back(ConstPoolEntry{
-				.tag = ConstPoolTag::NameAndType, .name_index = name_idx});
+			m_constant_pool->add_entry(i, ConstantPool::PoolEntry{
+				.tag = ConstantPool::PoolEntry::Tag::NameAndType,
+				.name_and_type = {
+					.name_index = name_idx,
+					.descriptor_index = descriptor_idx
+				}
+			});
 		} break;
 		default:
 			throw ClassParseException("Unknown constant pool tag");
@@ -325,8 +334,8 @@ void ClassLoader::load_class() {
 			uint16_t descriptor_index = m_stream->read<uint16_t>();
 			uint16_t attributes_count = m_stream->read<uint16_t>();
 			if (attributes_count > 0) {
-				auto cp_entry = constant_pool.at(name_index - 1);
-				read_attributes(cp_entry.utf8, cp_entry.utf8_length,
+				auto cp_entry = constant_pool().get(name_index);
+				read_attributes(cp_entry.utf8.string, cp_entry.utf8.length,
 								attributes_count);
 			}
 		}
@@ -337,34 +346,34 @@ void ClassLoader::load_class() {
 		for (int i = 0; i < methods_count; i++) {
 			uint16_t access_flags = m_stream->read<uint16_t>();
 			uint16_t name_index = m_stream->read<uint16_t>();
-			auto cp_entry = constant_pool.at(name_index - 1);
+			auto cp_entry = constant_pool().get(name_index);
 			uint16_t descriptor_index = m_stream->read<uint16_t>();
 			uint16_t attributes_count = m_stream->read<uint16_t>();
-			read_attributes(cp_entry.utf8, cp_entry.utf8_length,
+			read_attributes(cp_entry.utf8.string, cp_entry.utf8.length,
 							attributes_count);
 		}
 	}
 
 	// Iterate through constant pool method refs and match them with classes
 	std::vector<std::string> method_names;
-	for (int i = 0; i < constant_pool.size(); i++) {
-		auto entry = constant_pool.at(i);
+	for (int i = 0; i < constant_pool().size(); i++) {
+		auto entry = constant_pool().get(i);
 		// Resolve main method's class index
-		if (entry.tag == ConstPoolTag::Class) {
-			auto name = get_const_pool_entry(entry.name_index);
-			if (strncmp(name.utf8, m_class_name.c_str(), name.utf8_length) ==
+		if (entry.tag == ConstantPool::PoolEntry::Tag::Class) {
+			auto name = constant_pool().get(entry.class_ref.name_index);
+			if (strncmp(name.utf8.string, m_class_name.c_str(), name.utf8.length) ==
 				0) {
 				methods["main"].class_index = i + 1;
 			}
-			classes[i] = std::string(name.utf8, name.utf8_length);
+			classes[i] = std::string(name.utf8.string, name.utf8.length);
 		}
 
-		if (entry.tag == ConstPoolTag::MethodRef) {
-			auto name = get_const_pool_entry(entry.class_index);
+		if (entry.tag == ConstantPool::PoolEntry::Tag::MethodRef) {
+			auto name = constant_pool().get(entry.method_ref.class_index);
 			auto name_and_type =
-				get_const_pool_entry(entry.name_and_type_index);
-			auto name_str = get_const_pool_entry(name_and_type.name_index);
-			methods[name_str.utf8].class_index = entry.class_index;
+				constant_pool().get(entry.method_ref.name_and_type_index);
+			auto name_str = constant_pool().get(name_and_type.name_and_type.name_index);
+			methods[name_str.utf8.string].class_index = entry.method_ref.class_index;
 		}
 	}
 

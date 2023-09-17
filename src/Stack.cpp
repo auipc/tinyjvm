@@ -1,8 +1,10 @@
 #include <assert.h>
 #include <iostream>
-#include <tinyjvm/stack.h>
+#include <tinyjvm/Stack.h>
 
 namespace tinyJVM {
+// FIXME What's with the htonl usage
+// FIXME maybe stack items should be assosciated with primitives
 void Stack::push(int32_t v) { m_stack.push_back(v); }
 
 void Stack::push_64(int64_t v) {
@@ -13,6 +15,7 @@ void Stack::push_64(int64_t v) {
 	m_stack.push_back((int32_t)(v & 0xFFFFFFFF));
 }
 
+// FIXME raise error when we try to access stuff from an empty stack
 int32_t Stack::pop() {
 	if (!m_stack.size())
 		throw StackUnderflowException();

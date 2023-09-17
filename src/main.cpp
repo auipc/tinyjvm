@@ -1,5 +1,5 @@
-#include <tinyjvm/classloader.h>
-#include <tinyjvm/jvm.h>
+#include <tinyjvm/ClassLoader.h>
+#include <tinyjvm/JVM.h>
 
 using namespace tinyJVM;
 
