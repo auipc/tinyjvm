@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+namespace tinyJVM {
 class ConstantPool {
 public:
     ConstantPool(size_t size);
@@ -72,3 +73,4 @@ private:
     PoolEntry* m_pool_entries;
     size_t m_pool_entries_size;
 };
+}

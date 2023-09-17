@@ -3,6 +3,7 @@
 
 #include <tinyjvm/ConstantPool.h>
 
+namespace tinyJVM {
 ConstantPool::ConstantPool(size_t size)
     : m_pool_entries_size(size)
 {
@@ -22,4 +23,5 @@ void ConstantPool::add_entry(uint16_t index, PoolEntry entry) {
 
 const ConstantPool::PoolEntry& ConstantPool::get(uint16_t index) const {
     return m_pool_entries[index-1];
+}
 }
